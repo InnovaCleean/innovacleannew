@@ -174,7 +174,7 @@ export const useStore = create<AppState>()(
                     id: p.id,
                     sku: p.sku,
                     quantity: Number(p.quantity) || 0,
-                    costUnit: Number(p.cost_unit) || 0,
+                    costUnit: Number(p.cost) || 0,
                     costTotal: Number(p.cost_total) || 0,
                     date: p.date,
                     userId: p.user_id,
@@ -775,8 +775,8 @@ export const useStore = create<AppState>()(
                 sku: purchase.sku,
                 product_name: purchase.productName,
                 quantity: purchase.quantity,
-                cost: purchase.costUnit,
-                total: purchase.costTotal, // Explicitly send total
+                cost_unit: purchase.costUnit,    // CORRECT COLUMN
+                cost_total: purchase.costTotal,  // CORRECT COLUMN
                 supplier: purchase.supplier || 'Unknown',
                 date: purchase.date,
                 notes: purchase.notes,

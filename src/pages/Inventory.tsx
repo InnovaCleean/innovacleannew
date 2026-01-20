@@ -50,6 +50,13 @@ export default function Inventory() {
 
     const isAdmin = user?.role === 'admin';
 
+    // Helper to get next SKU
+    const getNextSKU = () => {
+        const skus = products.map(p => parseInt(p.sku)).filter(n => !isNaN(n));
+        const max = skus.length > 0 ? Math.max(...skus) : 1000;
+        return (max + 1).toString();
+    };
+
     const defaultProduct: Product = {
         id: '',
         sku: '',
@@ -65,7 +72,8 @@ export default function Inventory() {
     };
 
     const handleCreate = () => {
-        setEditingProduct({ ...defaultProduct });
+        const nextSku = getNextSKU();
+        setEditingProduct({ ...defaultProduct, sku: nextSku });
         setIsCreating(true);
     };
 
@@ -111,6 +119,37 @@ export default function Inventory() {
         e.target.value = '';
     };
 
+    const handleExport = () => {
+        // Simple CSV Export
+        const headers = ['SKU', 'Nombre', 'Categoria', 'Unidad', 'Stock', 'Costo', 'Precio Menudeo', 'Precio Medio', 'Precio Mayoreo', 'Valor Inventario'];
+        const rows = products.map(p => [
+            p.sku,
+            p.name,
+            p.category,
+            p.unit,
+            p.stockCurrent,
+            p.cost,
+            p.priceRetail,
+            p.priceMedium,
+            p.priceWholesale,
+            (p.stockCurrent * p.cost).toFixed(2)
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(r => r.map(c => typeof c === 'string' ? `"${c}"` : c).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `inventario_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Layout>
             <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-5rem)] flex flex-col">
@@ -131,23 +170,32 @@ export default function Inventory() {
                             </div>
                             <div className="flex gap-2">
                                 {isAdmin && (
-                                    <button
-                                        onClick={handleCreate}
-                                        className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-bold shadow-sm"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" />
-                                        NUEVO
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={handleCreate}
+                                            className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-bold shadow-sm"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            NUEVO PRODUCTO
+                                        </button>
+                                        <button
+                                            onClick={handleExport}
+                                            className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-xs font-bold shadow-sm"
+                                        >
+                                            <Download className="w-3.5 h-3.5" />
+                                            EXPORTAR
+                                        </button>
+                                    </>
                                 )}
                                 {isAdmin && (
                                     <>
-                                        <button
+                                        {/* <button
                                             onClick={downloadProductTemplate}
                                             className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-xs font-bold"
                                         >
                                             <Download className="w-3.5 h-3.5" />
                                             PLANTILLA
-                                        </button>
+                                        </button> */}
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
                                             className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors text-xs font-bold border border-primary-100"
@@ -200,7 +248,7 @@ export default function Inventory() {
                                     <td className="px-6 py-4 font-mono text-slate-500 text-xs">{p.sku}</td>
                                     <td className="px-6 py-4 text-slate-500 text-xs">{p.category}</td>
                                     <td className="px-6 py-4 font-medium text-slate-900">{p.name}</td>
-                                    <td className="px-6 py-4 text-slate-500">{p.unit || 'Litro'}</td>
+                                    <td className="px-6 py-4 text-slate-500">{p.unit || 'Pieza'}</td>
                                     <td className="px-6 py-4 text-center">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.stockCurrent > 10 ? 'bg-green-100 text-green-800' :
                                             p.stockCurrent > 0 ? 'bg-yellow-100 text-yellow-800' :
@@ -311,13 +359,13 @@ export default function Inventory() {
                                         <label className="text-xs font-semibold text-slate-500 uppercase">Stock {isCreating ? 'Inicial' : 'Actual'}</label>
                                         <input
                                             type="number"
-                                            value={editingProduct.stockCurrent}
+                                            min="0"
+                                            value={editingProduct.stockCurrent === 0 ? '' : editingProduct.stockCurrent}
                                             onChange={(e) => {
-                                                const val = parseInt(e.target.value) || 0;
+                                                const val = e.target.value === '' ? 0 : parseInt(e.target.value);
                                                 setEditingProduct({ ...editingProduct, stockCurrent: val, stockInitial: isCreating ? val : editingProduct.stockInitial });
                                             }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-                                            required
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -325,8 +373,12 @@ export default function Inventory() {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            value={editingProduct.cost}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, cost: parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            value={editingProduct.cost === 0 ? '' : editingProduct.cost}
+                                            onChange={(e) => {
+                                                const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                setEditingProduct({ ...editingProduct, cost: val });
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />
@@ -336,8 +388,12 @@ export default function Inventory() {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            value={editingProduct.priceRetail}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, priceRetail: parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            value={editingProduct.priceRetail === 0 ? '' : editingProduct.priceRetail}
+                                            onChange={(e) => {
+                                                const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                setEditingProduct({ ...editingProduct, priceRetail: val });
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />
@@ -347,8 +403,12 @@ export default function Inventory() {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            value={editingProduct.priceMedium}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, priceMedium: parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            value={editingProduct.priceMedium === 0 ? '' : editingProduct.priceMedium}
+                                            onChange={(e) => {
+                                                const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                setEditingProduct({ ...editingProduct, priceMedium: val });
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />
@@ -358,8 +418,12 @@ export default function Inventory() {
                                         <input
                                             type="number"
                                             step="0.01"
-                                            value={editingProduct.priceWholesale}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, priceWholesale: parseFloat(e.target.value) || 0 })}
+                                            min="0"
+                                            value={editingProduct.priceWholesale === 0 ? '' : editingProduct.priceWholesale}
+                                            onChange={(e) => {
+                                                const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                                setEditingProduct({ ...editingProduct, priceWholesale: val });
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />

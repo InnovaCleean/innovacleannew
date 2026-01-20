@@ -183,8 +183,12 @@ export default function Purchases() {
                                     <input
                                         type="number"
                                         min="1"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Number(e.target.value))}
+                                        value={quantity.toString()}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            // Allow empty for better UX
+                                            setQuantity(val === '' ? 0 : Number(val));
+                                        }}
                                         className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                     />
                                     {selectedProduct?.unit && (
@@ -202,8 +206,9 @@ export default function Purchases() {
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    value={cost}
+                                    value={cost === 0 ? '' : cost}
                                     onChange={(e) => setCost(Number(e.target.value))}
+                                    placeholder="0.00"
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                 />
                             </div>

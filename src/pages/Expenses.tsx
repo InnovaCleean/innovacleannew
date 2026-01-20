@@ -39,7 +39,7 @@ export default function Expenses() {
         await addExpense({
             ...newExpense,
             description: finalDesc,
-            userId: user.id || '',
+            userId: user.id, // Must be valid UUID or undefined/null. Store handles it.
             userName: user.name || 'Usuario',
         } as Expense);
 

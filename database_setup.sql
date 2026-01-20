@@ -235,6 +235,7 @@ insert into public.clients (name, rfc, address)
 values ('PÚBLICO GENERAL', 'XAXX010101000', '-')
 on conflict do nothing;
 
--- Default Settings
-insert into public.settings (company_name, theme_id)
-values ('Innova Clean', 'blue');
+-- Default Settings (Only if empty)
+INSERT INTO public.settings (company_name, theme_id)
+SELECT 'Innova Clean', 'blue'
+WHERE NOT EXISTS (SELECT 1 FROM public.settings);
