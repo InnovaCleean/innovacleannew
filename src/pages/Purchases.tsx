@@ -207,7 +207,10 @@ export default function Purchases() {
                                     min="0"
                                     step="0.01"
                                     value={cost === 0 ? '' : cost}
-                                    onChange={(e) => setCost(Number(e.target.value))}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setCost(val === '' ? 0 : parseFloat(val));
+                                    }}
                                     placeholder="0.00"
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                 />
@@ -351,8 +354,11 @@ export default function Purchases() {
                                     required
                                     min="0"
                                     step="0.01"
-                                    value={editForm.costUnit}
-                                    onChange={e => setEditForm(prev => ({ ...prev, costUnit: Number(e.target.value) }))}
+                                    value={editForm.costUnit === 0 ? '' : editForm.costUnit}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setEditForm(prev => ({ ...prev, costUnit: val === '' ? 0 : parseFloat(val) }))
+                                    }}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                 />
                             </div>

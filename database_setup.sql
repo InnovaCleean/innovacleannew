@@ -150,6 +150,9 @@ ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS correction_note text;
 ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS payment_method text DEFAULT 'cash';
 ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS payment_details jsonb;
 
+-- CLIENTS: Ensure wallet status exists
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS wallet_status text DEFAULT 'active';
+
 -- PURCHASES: Ensure user tracking columns exist
 ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS user_id uuid;
 ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS user_name text;

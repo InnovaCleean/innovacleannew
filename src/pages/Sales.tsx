@@ -37,6 +37,14 @@ export default function Sales() {
 
     const [isClientModalOpen, setIsClientModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState('general');
+    const [searchClientTerm, setSearchClientTerm] = useState('');
+    const [isClientListOpen, setIsClientListOpen] = useState(false);
+
+    const filteredClients = useMemo(() => {
+        if (!searchClientTerm) return [];
+        return clients.filter(c => c.name.toLowerCase().includes(searchClientTerm.toLowerCase())).slice(0, 10);
+    }, [clients, searchClientTerm]);
+
     const [historyClientFilter, setHistoryClientFilter] = useState('all');
     const [startDate, setStartDate] = useState(getCDMXDate());
     const [endDate, setEndDate] = useState(getCDMXDate());
@@ -531,7 +539,7 @@ export default function Sales() {
                         </h2>
 
                         <form onSubmit={handleAddToCart} className="space-y-4">
-                            {/* Client Selector */}
+                            {/* Client Selector with Search */}
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1 flex justify-between">
                                     <span>Cliente</span>
@@ -542,15 +550,60 @@ export default function Sales() {
                                     )}
                                 </label>
                                 <div className="flex gap-2">
-                                    <select
-                                        value={selectedClient}
-                                        onChange={(e) => setSelectedClient(e.target.value)}
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
-                                    >
-                                        {clients.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative flex-1 group">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                                        <input
+                                            type="text"
+                                            value={searchClientTerm}
+                                            onChange={(e) => {
+                                                setSearchClientTerm(e.target.value);
+                                                setIsClientListOpen(true);
+                                            }}
+                                            onFocus={() => setIsClientListOpen(true)}
+                                            onBlur={() => setTimeout(() => setIsClientListOpen(false), 200)}
+                                            placeholder="Buscar cliente..."
+                                            className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                                        />
+
+                                        {/* Dropdown Results */}
+                                        {isClientListOpen && (
+                                            <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                                <button
+                                                    type="button"
+                                                    onMouseDown={() => {
+                                                        setSelectedClient('general');
+                                                        setSearchClientTerm('Público General');
+                                                        setIsClientListOpen(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm font-bold text-slate-700 border-b border-slate-100"
+                                                >
+                                                    Público General
+                                                </button>
+                                                {filteredClients.length > 0 ? (
+                                                    filteredClients.map(c => (
+                                                        <button
+                                                            key={c.id}
+                                                            type="button"
+                                                            onMouseDown={() => {
+                                                                setSelectedClient(c.id);
+                                                                setSearchClientTerm(c.name);
+                                                                setIsClientListOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
+                                                        >
+                                                            <div className="font-medium text-slate-900">{c.name}</div>
+                                                            {c.phone && <div className="text-xs text-slate-500">{c.phone}</div>}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-3 text-sm text-slate-500 italic text-center">
+                                                        No se encontraron clientes
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <button
                                         type="button"
                                         onClick={() => setIsClientModalOpen(true)}

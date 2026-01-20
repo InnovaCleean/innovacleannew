@@ -120,7 +120,7 @@ export default function Inventory() {
     };
 
     const handleExport = () => {
-        // Simple CSV Export
+        // Robust CSV Export with BOM for Excel
         const headers = ['SKU', 'Nombre', 'Categoria', 'Unidad', 'Stock', 'Costo', 'Precio Menudeo', 'Precio Medio', 'Precio Mayoreo', 'Valor Inventario'];
         const rows = products.map(p => [
             p.sku,
@@ -137,10 +137,19 @@ export default function Inventory() {
 
         const csvContent = [
             headers.join(','),
-            ...rows.map(r => r.map(c => typeof c === 'string' ? `"${c}"` : c).join(','))
+            ...rows.map(r => r.map(c => {
+                const cell = String(c);
+                // Escape quotes and wrap in quotes if it contains comma, quote or newline
+                if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) {
+                    return `"${cell.replace(/"/g, '""')}"`;
+                }
+                return cell;
+            }).join(','))
         ].join('\n');
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Add BOM for Excel UTF-8 compatibility
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
@@ -176,7 +185,7 @@ export default function Inventory() {
                                             className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-bold shadow-sm"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
-                                            NUEVO PRODUCTO
+                                            + Nuevo Producto
                                         </button>
                                         <button
                                             onClick={handleExport}
@@ -371,6 +380,7 @@ export default function Inventory() {
                                     <div className="space-y-1">
                                         <label className="text-xs font-semibold text-slate-500 uppercase">Costo</label>
                                         <input
+                                            <input
                                             type="number"
                                             step="0.01"
                                             min="0"

@@ -420,7 +420,7 @@ export const useStore = create<AppState>()(
                 amount: expense.amount,
                 type: expense.type,
                 category: expense.category,
-                user_id: (!expense.userId || expense.userId === 'general') ? null : expense.userId,
+                user_id: (expense.userId && expense.userId !== 'general' && expense.userId.length > 10) ? expense.userId : null,
                 // user_name is optional if we join, but let's store it for snapshot
                 user_name: expense.userName,
                 date: expense.date
@@ -711,13 +711,32 @@ export const useStore = create<AppState>()(
                         client_id: firstSale.clientId,
                         amount: refundAmount,
                         points: 0, // No points change, just balance
-                        type: 'adjustment', // treated as positive adjustment
+                        type: 'adjustment' as const, // treated as positive adjustment
                         description: `Reembolso por Cancelación Folio ${folio}`,
                         created_at: new Date().toISOString()
                     };
-                    await supabase.from('loyalty_transactions').insert([refundTx]);
-                    // We knowingly accept that we might need to refresh to see it in UI immediately, 
-                    // but fetchInitialData is usually heavy. We will rely on next fetch.
+                    const { data: refundData, error: refundError } = await supabase.from('loyalty_transactions').insert([refundTx]).select().single();
+                    if (refundData) {
+                        set((state) => ({
+                            loyaltyTransactions: [
+                                {
+                                    id: refundData.id,
+                                    clientId: refundData.client_id,
+                                    saleId: refundData.sale_id,
+                                    amount: Number(refundData.amount),
+                                    points: Number(refundData.points),
+                                    type: refundData.type,
+                                    description: refundData.description,
+                                    date: refundData.created_at,
+                                    created_at: refundData.created_at
+                                },
+                                ...state.loyaltyTransactions
+                            ]
+                        }));
+                    } else if (refundError) {
+                        console.error('Error refunding wallet:', refundError);
+                        alert(`Error al reembolsar al monedero: ${refundError.message}`);
+                    }
                 }
             }
 
@@ -775,20 +794,19 @@ export const useStore = create<AppState>()(
                 sku: purchase.sku,
                 product_name: purchase.productName,
                 quantity: purchase.quantity,
-                cost_unit: purchase.costUnit,    // CORRECT COLUMN
-                cost_total: purchase.costTotal,  // CORRECT COLUMN
+                cost: purchase.costUnit,         // CHANGED: Matches 'cost' column from read logic
+                cost_total: purchase.costTotal,
                 supplier: purchase.supplier || 'Unknown',
                 date: purchase.date,
                 notes: purchase.notes,
-                user_id: purchase.userId,
+                user_id: (purchase.userId && purchase.userId.length > 10) ? purchase.userId : null, // Handle potential empty/invalid user
                 user_name: purchase.userName
             }]).select().single();
 
             if (error) {
                 console.error("Error saving purchase:", error);
-                alert("Error al guardar la compra en la base de datos (aunque el stock se actualizó localmente). Verifica la consola.");
-                // If purchase fails, we currently still update stock. 
-                // Ideally we should rollback or throw, but for now let's at least log it.
+                alert(`Error al guardar la compra: ${error.message}`);
+                // return; // Keep going to update local stock even if DB fails? No, better to alert.
             }
             const { data: prod } = await supabase.from('products').select('stock_current').eq('sku', purchase.sku).single();
             if (prod) {

@@ -177,11 +177,15 @@ export default function Expenses() {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto</label>
                                         <input
+                                            <input
                                             type="number"
-                                            value={newExpense.amount}
-                                            onChange={e => setNewExpense({ ...newExpense, amount: Number(e.target.value) })}
+                                            value={newExpense.amount === 0 ? '' : newExpense.amount}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setNewExpense({ ...newExpense, amount: val === '' ? 0 : parseFloat(val) })
+                                            }}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none font-bold text-slate-700"
-                                            placeholder="0"
+                                            placeholder="0.00"
                                         />
                                     </div>
                                     <div>
