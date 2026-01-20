@@ -380,7 +380,6 @@ export default function Inventory() {
                                     <div className="space-y-1">
                                         <label className="text-xs font-semibold text-slate-500 uppercase">Costo</label>
                                         <input
-                                            <input
                                             type="number"
                                             step="0.01"
                                             min="0"

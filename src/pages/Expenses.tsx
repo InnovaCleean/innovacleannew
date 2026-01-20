@@ -177,7 +177,6 @@ export default function Expenses() {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monto</label>
                                         <input
-                                            <input
                                             type="number"
                                             value={newExpense.amount === 0 ? '' : newExpense.amount}
                                             onChange={e => {
