@@ -4,7 +4,7 @@ import { Layout } from '../components/Layout';
 import { Search, Edit2, Trash2, RefreshCw, X, Download, Upload, Plus } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Product } from '../types';
-import { downloadProductTemplate, parseProductsExcel } from '../lib/excelUtils';
+import { parseProductsExcel } from '../lib/excelUtils';
 
 export default function Inventory() {
     const products = useStore((state) => state.products);
