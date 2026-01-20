@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
-import { Search, Archive, Edit2, Trash2 } from 'lucide-react';
+import { Search, Archive, Edit2, Trash2, X } from 'lucide-react';
 import { formatCurrency, formatDate, getCDMXDate, getCDMXISOString, getCDMXFirstDayOfMonth, parseCDMXDate } from '../lib/utils';
 import { Product, Purchase } from '../types';
 
@@ -158,9 +158,21 @@ export default function Purchases() {
                             </div>
 
                             {selectedProduct && (
-                                <div className="p-4 bg-primary-50 rounded-lg border border-primary-100">
+                                <div className="p-4 bg-primary-50 rounded-lg border border-primary-100 relative group animate-in fade-in zoom-in duration-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedProduct(null);
+                                            setSearchTerm('');
+                                            setCost(0);
+                                        }}
+                                        className="absolute right-2 top-2 p-1 text-primary-400 hover:text-primary-600 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Cambiar Producto"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
                                     <div className="text-sm text-primary-800 font-medium">{selectedProduct.name}</div>
-                                    <div className="text-xs text-primary-600 mt-1">Stock Actual: {selectedProduct.stockCurrent} ({selectedProduct.unit || 'uds'})</div>
+                                    <div className="text-xs text-primary-600 mt-1">Disponible: {selectedProduct.stockCurrent} {selectedProduct.unit || 'Litro'}</div>
                                 </div>
                             )}
 

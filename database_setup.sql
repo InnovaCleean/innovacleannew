@@ -141,6 +141,37 @@ create table if not exists public.settings (
   master_pin text
 );
 
+-- 2.1 PATCH EXISTING TABLES (Ensure columns exist if table was already there)
+-- This fixes the "Could not find column" error if you re-run this script on an old database
+
+-- SALES: Ensure cancellation columns exist
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS is_cancelled boolean DEFAULT false;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS correction_note text;
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS payment_method text DEFAULT 'cash';
+ALTER TABLE public.sales ADD COLUMN IF NOT EXISTS payment_details jsonb;
+
+-- PURCHASES: Ensure user tracking columns exist
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS user_id uuid;
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS user_name text;
+
+-- PURCHASES: Fix Generated Column Issue (If 'total' is generated, we must fix it)
+DO $$ 
+BEGIN 
+    -- Check if 'total' is a generated column
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'purchases' 
+        AND column_name = 'total' 
+        AND is_generated = 'ALWAYS'
+    ) THEN 
+        -- Drop and recreate as normal column
+        ALTER TABLE public.purchases DROP COLUMN total;
+        ALTER TABLE public.purchases ADD COLUMN total numeric;
+    END IF; 
+END $$;
+
 -- 3. ENABLE RLS (SECURITY)
 alter table public.users enable row level security;
 alter table public.products enable row level security;
@@ -155,13 +186,36 @@ alter table public.settings enable row level security;
 -- We grant full access to anonymous/authenticated users because the App handles Auth security.
 -- This prevents "new row violates row-level security policy" errors.
 
+-- USERS
+DROP POLICY IF EXISTS "App Access Users" ON public.users;
 create policy "App Access Users" on public.users for all to public using (true) with check (true);
+
+-- PRODUCTS
+DROP POLICY IF EXISTS "App Access Products" ON public.products;
 create policy "App Access Products" on public.products for all to public using (true) with check (true);
+
+-- SALES
+DROP POLICY IF EXISTS "App Access Sales" ON public.sales;
 create policy "App Access Sales" on public.sales for all to public using (true) with check (true);
+
+-- CLIENTS
+DROP POLICY IF EXISTS "App Access Clients" ON public.clients;
 create policy "App Access Clients" on public.clients for all to public using (true) with check (true);
+
+-- PURCHASES
+DROP POLICY IF EXISTS "App Access Purchases" ON public.purchases;
 create policy "App Access Purchases" on public.purchases for all to public using (true) with check (true);
+
+-- EXPENSES
+DROP POLICY IF EXISTS "App Access Expenses" ON public.expenses;
 create policy "App Access Expenses" on public.expenses for all to public using (true) with check (true);
+
+-- LOYALTY
+DROP POLICY IF EXISTS "App Access Loyalty" ON public.loyalty_transactions;
 create policy "App Access Loyalty" on public.loyalty_transactions for all to public using (true) with check (true);
+
+-- SETTINGS
+DROP POLICY IF EXISTS "App Access Settings" ON public.settings;
 create policy "App Access Settings" on public.settings for all to public using (true) with check (true);
 
 -- Grant permissions explicitly

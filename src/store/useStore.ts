@@ -776,7 +776,7 @@ export const useStore = create<AppState>()(
                 product_name: purchase.productName,
                 quantity: purchase.quantity,
                 cost: purchase.costUnit,
-                // total is a generated column in DB (quantity * cost), do not send it.
+                total: purchase.costTotal, // Explicitly send total
                 supplier: purchase.supplier || 'Unknown',
                 date: purchase.date,
                 notes: purchase.notes,
