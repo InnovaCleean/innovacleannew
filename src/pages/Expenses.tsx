@@ -18,7 +18,7 @@ export default function Expenses() {
         amount: 0,
         type: 'variable',
         category: 'General',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'),
         paymentMethod: 'cash'
     });
 
@@ -39,7 +39,7 @@ export default function Expenses() {
         await addExpense({
             ...newExpense,
             description: finalDesc,
-            userId: user.id, // Must be valid UUID or undefined/null. Store handles it.
+            userId: user.id || '00000000-0000-0000-0000-000000000000', // Fallback UUID if user issue, though access check should prevent
             userName: user.name || 'Usuario',
         } as Expense);
 
@@ -49,7 +49,7 @@ export default function Expenses() {
             amount: 0,
             type: 'variable',
             category: 'General',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toLocaleDateString('en-CA'),
             paymentMethod: 'cash'
         });
     };
@@ -257,6 +257,6 @@ export default function Expenses() {
                     </div>
                 )}
             </div>
-        </Layout>
+        </Layout >
     );
 }

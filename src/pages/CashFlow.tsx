@@ -38,8 +38,9 @@ export default function CashFlow() {
     // Theme colors
     const moneyColor = 'primary'; // Using explicit 'primary' to map to dynamic classes
 
-    const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+    // Default to today in local time
+    const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString('en-CA'));
+    const [endDate, setEndDate] = useState(() => new Date().toLocaleDateString('en-CA'));
 
     // Manual Movements (Local Storage for now as no Table exists)
     const [manualMovements, setManualMovements] = useState<ManualMovement[]>(() => {
@@ -79,9 +80,10 @@ export default function CashFlow() {
         end.setHours(23, 59, 59, 999);
 
         // Filter Sales (Exclude cancelled)
-        const filteredSales = sales.filter(s => {
+        // Filter Sales (Include cancelled for history list, exclude for totals)
+        const relevantSales = sales.filter(s => {
             const d = parseCDMXDate(s.date);
-            return d >= start && d <= end && !s.isCancelled;
+            return d >= start && d <= end;
         });
 
         // Filter Expenses
@@ -96,19 +98,22 @@ export default function CashFlow() {
             return d >= start && d <= end;
         });
 
-        // Totals
+        // Totals (Exclude cancelled)
         let cashIn = 0;
         let cardIn = 0;
         let transferIn = 0;
+        let walletIn = 0;
 
-        filteredSales.forEach(s => {
+        relevantSales.filter(s => !s.isCancelled).forEach(s => {
             if (s.paymentMethod === 'cash') cashIn += s.amount;
             else if (s.paymentMethod === 'card_credit' || s.paymentMethod === 'card_debit') cardIn += s.amount;
             else if (s.paymentMethod === 'transfer') transferIn += s.amount;
+            else if (s.paymentMethod === 'wallet') walletIn += s.amount;
             else if (s.paymentMethod === 'multiple' && s.paymentDetails) {
                 cashIn += s.paymentDetails.cash || 0;
                 cardIn += (s.paymentDetails.card_credit || 0) + (s.paymentDetails.card_debit || 0);
                 transferIn += s.paymentDetails.transfer || 0;
+                walletIn += s.paymentDetails.wallet || 0;
             }
         });
 
@@ -134,11 +139,12 @@ export default function CashFlow() {
             cashIn,
             cardIn,
             transferIn,
+            walletIn,
             totalExpenses,
             totalWithdrawals,
             netCash,
             history: [
-                ...filteredSales.map(s => ({ entryType: 'sale', ...s })),
+                ...relevantSales.map(s => ({ entryType: 'sale', ...s })),
                 ...filteredExpenses.map(e => ({ entryType: 'expense', ...e })),
                 ...filteredMovements.map(m => ({ entryType: 'movement', ...m }))
             ].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -190,6 +196,10 @@ export default function CashFlow() {
                                 <span className="text-sm font-medium text-slate-600">Transferencias</span>
                                 <span className="font-bold text-slate-800">{formatCurrency(report.transferIn)}</span>
                             </div>
+                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                                <span className="text-sm font-medium text-slate-600">Monedero</span>
+                                <span className="font-bold text-slate-800">{formatCurrency(report.walletIn)}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -237,6 +247,9 @@ export default function CashFlow() {
                                         typeLabel = `Venta ${item.folio}`;
                                         amount = item.amount;
                                         color = 'text-emerald-600';
+                                        if (item.isCancelled) {
+                                            color = 'text-red-400 line-through';
+                                        }
                                         // Show specifically what part was cash? 
                                         // For simplicity showing total sale, but maybe confusing for cash flow.
                                         // User asked report by payment method.
@@ -253,11 +266,12 @@ export default function CashFlow() {
                                     }
 
                                     return (
-                                        <tr key={i} className="hover:bg-slate-50">
+                                        <tr key={i} className={`hover:bg-slate-50 ${item.isCancelled ? 'opacity-60 bg-red-50' : ''}`}>
                                             <td className="px-6 py-3 text-slate-500">{new Date(item.date).toLocaleString()}</td>
                                             <td className="px-6 py-3">
-                                                <div className="font-medium text-slate-800">
+                                                <div className={`font-medium text-slate-800 ${item.isCancelled ? 'line-through text-red-500' : ''}`}>
                                                     {item.description || item.product_name || typeLabel}
+                                                    {item.isCancelled && <span className="ml-2 text-xs text-red-600 font-bold">(CANCELADO)</span>}
                                                 </div>
                                                 <div className="text-xs text-slate-400">
                                                     {item.entryType === 'sale' && (item.paymentMethod === 'multiple' ? 'Múltiple' : item.paymentMethod)}

@@ -146,7 +146,7 @@ export default function Loyalty() {
                 <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col">
                     {activeClient ? (
                         <>
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-start">
+                            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                 <div>
                                     <h1 className="text-2xl font-bold text-slate-800">{activeClient.name}</h1>
                                     <div className="flex items-center gap-4 mt-2">
@@ -158,7 +158,7 @@ export default function Loyalty() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right p-4 bg-primary-50 rounded-xl border border-primary-100">
+                                <div className="text-right p-4 bg-primary-50 rounded-xl border border-primary-100 w-full md:w-auto">
                                     <div className="text-xs text-primary-600 font-bold uppercase tracking-wider mb-1">Saldo Disponible</div>
                                     <div className="text-3xl font-black text-primary-700">{formatCurrency(clientBalance)}</div>
                                 </div>
@@ -228,8 +228,8 @@ export default function Loyalty() {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${t.type === 'earn' ? 'bg-emerald-100 text-emerald-700' :
-                                                            t.type === 'adjustment' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-red-100 text-red-700'
+                                                        t.type === 'adjustment' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-red-100 text-red-700'
                                                         }`}>
                                                         {t.type === 'earn' ? 'Acumulado' :
                                                             t.type === 'adjustment' ? 'Ajuste Manual' :

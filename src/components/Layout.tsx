@@ -79,7 +79,7 @@ export function Layout({ children }: LayoutProps) {
                 "fixed inset-y-0 left-0 bg-white border-r border-slate-200 w-64 z-50 transform transition-transform duration-300 md:relative md:translate-x-0",
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <div className="h-full flex flex-col">
+                <div className="h-full flex flex-col overflow-y-auto">
                     {/* Sidebar Header */}
                     <div className="p-6">
                         <div className="flex items-center gap-3 mb-8">

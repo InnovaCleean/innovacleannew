@@ -1171,8 +1171,8 @@ export default function Sales() {
                                 </div>
                             </div>
 
-                            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                                <div className="flex gap-2">
+                            <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-wrap justify-end gap-3">
+                                <div className="flex gap-2 flex-wrap justify-end">
                                     <button
                                         onClick={handlePrintTicket}
                                         className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors border border-slate-300"
@@ -1204,17 +1204,18 @@ export default function Sales() {
                                 </div>
                                 <button
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-6 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 font-medium"
+                                    className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 font-medium"
                                 >
                                     Cerrar
                                 </button>
                                 {isAdmin && !activeFolioData.isCancelled && (
                                     <button
                                         onClick={() => handleCancelFolio(activeFolioData.folio)}
-                                        className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg shadow-red-500/30 flex items-center gap-2"
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg shadow-red-500/30 flex items-center gap-2"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        Cancelar Venta
+                                        <span className="hidden sm:inline">Cancelar Venta</span>
+                                        <span className="sm:hidden">Cancelar</span>
                                     </button>
                                 )}
                             </div>

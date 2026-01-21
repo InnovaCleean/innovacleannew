@@ -702,6 +702,12 @@ export const useStore = create<AppState>()(
             const folioSales = get().sales.filter(s => s.folio === folio);
             if (folioSales.length === 0) return;
 
+            // CHECK IF ALREADY CANCELLED to prevent duplicates/race conditions
+            if (folioSales[0].isCancelled) {
+                console.warn(`Sale folio ${folio} is already cancelled.`);
+                return;
+            }
+
             // 0. Process Wallet Refund (If applicable)
             const firstSale = folioSales[0];
             let refundAmount = 0;
@@ -709,55 +715,49 @@ export const useStore = create<AppState>()(
             if (firstSale.paymentMethod === 'wallet') {
                 refundAmount = folioSales.reduce((sum, s) => sum + s.amount, 0);
             } else if (firstSale.paymentMethod === 'multiple' && firstSale.paymentDetails?.wallet) {
-                // If mixed payment, verify how much was wallet.
-                // Assuming paymentDetails are consistent across the batch (which usually they are for single transaction)
                 refundAmount = Number(firstSale.paymentDetails.wallet) || 0;
             }
 
             if (refundAmount > 0 && firstSale.clientId) {
-                // double check check if we haven't already refunded (prevent double refund on re-clicks if logic allows re-entry but here we usually check isCancelled)
-                if (!firstSale.isCancelled) {
-                    const refundTx = {
-                        client_id: firstSale.clientId,
-                        amount: refundAmount,
-                        points: 0, // No points change, just balance
-                        type: 'adjustment' as const, // treated as positive adjustment
-                        description: `Reembolso por Cancelación Folio ${folio}`,
-                        created_at: new Date().toISOString()
-                    };
-                    const { data: refundData, error: refundError } = await supabase.from('loyalty_transactions').insert([refundTx]).select().single();
-                    if (refundData) {
-                        get().addLoyaltyTransaction({
-                            id: refundData.id,
-                            clientId: refundData.client_id,
-                            saleId: refundData.sale_id,
-                            amount: Number(refundData.amount),
-                            points: Number(refundData.points),
-                            type: refundData.type,
-                            description: refundData.description,
-                            date: refundData.created_at,
-                            created_at: refundData.created_at
-                        });
-                    } else if (refundError) {
-                        console.error('Error refunding wallet:', refundError);
-                        alert(`Error al reembolsar al monedero: ${refundError.message}`);
-                    }
+                const refundTx = {
+                    client_id: firstSale.clientId,
+                    amount: refundAmount,
+                    points: 0,
+                    type: 'adjustment' as const,
+                    description: `Reembolso por Cancelación Folio ${folio}`,
+                    created_at: new Date().toISOString()
+                };
+                const { data: refundData, error: refundError } = await supabase.from('loyalty_transactions').insert([refundTx]).select().single();
+                if (refundData) {
+                    get().addLoyaltyTransaction({
+                        id: refundData.id,
+                        clientId: refundData.client_id,
+                        saleId: refundData.sale_id,
+                        amount: Number(refundData.amount),
+                        points: Number(refundData.points),
+                        type: refundData.type,
+                        description: refundData.description,
+                        date: refundData.created_at,
+                        created_at: refundData.created_at
+                    });
+                } else if (refundError) {
+                    console.error('Error refunding wallet:', refundError);
+                    alert(`Error al reembolsar al monedero: ${refundError.message}`);
                 }
             }
 
-            // 0.1 Reverse Earned Points (If applicable)
-            if (!firstSale.isCancelled && firstSale.clientId && firstSale.clientId !== 'general') {
+            // 0.1 Reverse Earned Points (If applicable) - Only if not already cancelled (redundant check but safe)
+            if (firstSale.clientId && firstSale.clientId !== 'general') {
                 const settings = get().settings;
                 const percentage = settings.loyaltyPercentage || 0;
-                // Calculate total sale amount to reverse points
                 const totalSaleAmount = folioSales.reduce((sum, s) => sum + s.amount, 0);
 
                 if (percentage > 0 && totalSaleAmount > 0) {
                     const pointsReversed = totalSaleAmount * (percentage / 100);
                     const reverseTx = {
                         client_id: firstSale.clientId,
-                        amount: -pointsReversed, // Deduct the amount added to wallet
-                        points: -pointsReversed, // Deduct points
+                        amount: -pointsReversed,
+                        points: -pointsReversed,
                         type: 'adjustment' as const,
                         description: `Cancelación Puntos Folio ${folio}`,
                         created_at: new Date().toISOString()
@@ -779,15 +779,12 @@ export const useStore = create<AppState>()(
                 }
             }
 
-            // 1. Restock Products (Keep this logic)
+            // 1. Restock Products
             for (const sale of folioSales) {
-                // Only restock if it hasn't been cancelled/restocked yet
-                if (!sale.isCancelled) {
-                    const { data: prod } = await supabase.from('products').select('stock_current').eq('sku', sale.sku).single();
-                    if (prod) {
-                        const newStock = prod.stock_current + sale.quantity;
-                        await supabase.from('products').update({ stock_current: newStock }).eq('sku', sale.sku);
-                    }
+                const { data: prod } = await supabase.from('products').select('stock_current').eq('sku', sale.sku).single();
+                if (prod) {
+                    const newStock = prod.stock_current + sale.quantity;
+                    await supabase.from('products').update({ stock_current: newStock }).eq('sku', sale.sku);
                 }
             }
 
