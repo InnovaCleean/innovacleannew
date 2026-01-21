@@ -52,11 +52,11 @@ export const parseProductsExcel = (file: File): Promise<Partial<Product>[]> => {
                     name: String(findValue(row, 'Nombre', 'name', 'Producto') || '').trim(),
                     unit: String(findValue(row, 'Unidad de Medida', 'Unidad', 'unit') || 'Litro').trim(),
                     stockCurrent: cleanNumber(findValue(row, 'Stock', 'stock', 'stockCurrent', 'Existencia')),
-                    stockInitial: cleanNumber(findValue(row, 'Stock', 'stock', 'stockInitial', 'Existencia')), // Default to current if not separate
+                    stockInitial: cleanNumber(findValue(row, 'Stock', 'stock', 'stockInitial', 'Existencia')),
                     cost: cleanNumber(findValue(row, 'Costo', 'cost', 'Costo Unitario')),
-                    priceRetail: cleanNumber(findValue(row, 'Menudeo', 'priceRetail', 'Precio Menudeo')),
-                    priceMedium: cleanNumber(findValue(row, 'Medio', 'priceMedium', 'Precio Medio')),
-                    priceWholesale: cleanNumber(findValue(row, 'Mayoreo', 'priceWholesale', 'Precio Mayoreo')),
+                    priceRetail: cleanNumber(findValue(row, 'Menudeo', 'priceRetail', 'Precio Menudeo', 'Precio Menu')),
+                    priceMedium: cleanNumber(findValue(row, 'Medio', 'priceMedium', 'Precio Medio', 'Precio Medic')),
+                    priceWholesale: cleanNumber(findValue(row, 'Mayoreo', 'priceWholesale', 'Precio Mayoreo', 'Precio Mayo')),
                 }));
 
                 resolve(products.filter(p => p.sku && p.name));

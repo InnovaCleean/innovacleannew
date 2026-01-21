@@ -73,7 +73,7 @@ interface AppState {
 
 export const useStore = create<AppState>()(
     (set, get) => ({
-        user: null,
+        user: JSON.parse(localStorage.getItem('app-user') || 'null'),
         products: [], // Loaded from DB
         sales: [], // Loaded from DB
         purchases: [], // Loaded from DB
@@ -578,7 +578,7 @@ export const useStore = create<AppState>()(
                 price_wholesale: p.priceWholesale,
                 cost: p.cost,
                 stock_initial: p.stockInitial,
-                stock_current: p.stockInitial
+                stock_current: p.stockCurrent
             }));
             if (replace) {
                 await supabase.from('products').delete().neq('sku', '000');

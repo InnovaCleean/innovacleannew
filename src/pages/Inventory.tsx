@@ -132,12 +132,38 @@ export default function Inventory() {
 
         try {
             const products = await parseProductsExcel(file);
-            const mode = confirm('¿Desea REEMPLAZAR todo el inventario? (Aceptar para REEMPLAZAR, Cancelar para solo AGREGAR nuevos productos)');
-            importProducts(products, mode);
+
+            // Preview First Product
+            const sample = products[0];
+            const previewMsg = `Vista Previa del Primer Producto:\n\nSKU: ${sample.sku}\nNombre: ${sample.name}\nStock: ${sample.stockCurrent}\nPrecio: ${formatCurrency(sample.priceRetail || 0)}\n\n¿Los datos se ven correctos?\n(Si ves ceros o nombres vacíos, cancela y revisa tu Excel)`;
+
+            if (!confirm(previewMsg)) {
+                e.target.value = '';
+                return;
+            }
+
+            // Warnings Check
+            const zeroPrices = products.filter(p => !p.priceRetail && !p.priceMedium && !p.priceWholesale).length;
+            const zeroStock = products.filter(p => !p.stockCurrent).length;
+            const total = products.length;
+
+            if (zeroPrices > total * 0.5 || zeroStock > total * 0.5) {
+                if (!confirm(`ADVERTENCIA: ${zeroPrices} productos tienen precio $0 y ${zeroStock} tienen stock 0.\n¿Seguro que deseas continuar?`)) {
+                    e.target.value = '';
+                    return;
+                }
+            }
+
+            const mode = confirm(
+                `Se encontraron ${total} productos.\n\n` +
+                `OPCIÓN 1: Aceptar = REEMPLAZAR TODO (⚠️ PELIGRO: Borra historial de ventas antiguo, usa solo para iniciar de cero).\n\n` +
+                `OPCIÓN 2: Cancelar = ACTUALIZAR/AGREGAR (✅ RECOMENDADO: Actualiza precios/stock de los que existen y agrega los nuevos).`
+            );
+            await importProducts(products, mode);
             alert('Inventario actualizado con éxito');
         } catch (error) {
             console.error(error);
-            alert('Error al procesar el archivo Excel');
+            alert('Error al procesar el archivo Excel. Verifique el formato.');
         }
         e.target.value = '';
     };

@@ -72,7 +72,7 @@ export function Layout({ children }: LayoutProps) {
     };
 
     return (
-        <div className="flex bg-slate-50 min-h-screen font-sans">
+        <div className="flex flex-col md:flex-row bg-slate-50 min-h-screen font-sans">
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-2">
