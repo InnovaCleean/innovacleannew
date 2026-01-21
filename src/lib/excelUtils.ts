@@ -33,17 +33,30 @@ export const parseProductsExcel = (file: File): Promise<Partial<Product>[]> => {
                     return isNaN(num) ? 0 : num;
                 };
 
+                // Helper to find value by fuzzy key match
+                const findValue = (row: any, ...keys: string[]) => {
+                    const rowKeys = Object.keys(row);
+                    for (const key of keys) {
+                        // Exact match
+                        if (row[key] !== undefined) return row[key];
+                        // Case-insensitive match
+                        const match = rowKeys.find(k => k.trim().toLowerCase() === key.toLowerCase());
+                        if (match) return row[match];
+                    }
+                    return undefined;
+                };
+
                 const products: Partial<Product>[] = json.map((row: any) => ({
-                    sku: String(row.SKU || row.sku || '').trim(),
-                    category: String(row.Categoría || row.category || 'General').trim(),
-                    name: String(row.Nombre || row.name || '').trim(),
-                    unit: String(row['Unidad de Medida'] || row.unit || 'Litro').trim(),
-                    stockCurrent: cleanNumber(row.Stock || row.stockCurrent),
-                    stockInitial: cleanNumber(row.Stock || row.stockInitial),
-                    cost: cleanNumber(row.Costo || row.cost),
-                    priceRetail: cleanNumber(row.Menudeo || row.priceRetail),
-                    priceMedium: cleanNumber(row.Medio || row.priceMedium),
-                    priceWholesale: cleanNumber(row.Mayoreo || row.priceWholesale),
+                    sku: String(findValue(row, 'SKU', 'sku', 'Código') || '').trim(),
+                    category: String(findValue(row, 'Categoría', 'Categoria', 'category') || 'General').trim(),
+                    name: String(findValue(row, 'Nombre', 'name', 'Producto') || '').trim(),
+                    unit: String(findValue(row, 'Unidad de Medida', 'Unidad', 'unit') || 'Litro').trim(),
+                    stockCurrent: cleanNumber(findValue(row, 'Stock', 'stock', 'stockCurrent', 'Existencia')),
+                    stockInitial: cleanNumber(findValue(row, 'Stock', 'stock', 'stockInitial', 'Existencia')), // Default to current if not separate
+                    cost: cleanNumber(findValue(row, 'Costo', 'cost', 'Costo Unitario')),
+                    priceRetail: cleanNumber(findValue(row, 'Menudeo', 'priceRetail', 'Precio Menudeo')),
+                    priceMedium: cleanNumber(findValue(row, 'Medio', 'priceMedium', 'Precio Medio')),
+                    priceWholesale: cleanNumber(findValue(row, 'Mayoreo', 'priceWholesale', 'Precio Mayoreo')),
                 }));
 
                 resolve(products.filter(p => p.sku && p.name));

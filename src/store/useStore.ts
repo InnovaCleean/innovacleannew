@@ -38,6 +38,7 @@ interface AppState {
     updateUser: (id: string, updates: Partial<User>) => void;
     deleteUser: (id: string) => void;
     updateUserActivity: (action: string) => void;
+    fetchUsers: () => Promise<void>;
 
     // Admin Sale Mgmt
     deleteSale: (id: string, reason: string) => void;
@@ -95,27 +96,35 @@ export const useStore = create<AppState>()(
         fetchInitialData: async () => {
             if (!import.meta.env.VITE_SUPABASE_URL) return;
 
+            // Parallel Fetch
             const [
-                { data: users },
                 { data: products },
                 { data: sales },
                 { data: clients },
-                { data: purchases },
+                { data: users },
                 { data: expenses },
+                { data: purchases },
                 { data: loyalty },
-                { data: settingsData }
+                { data: settingsData } // Keep settingsData fetch
             ] = await Promise.all([
-                supabase.from('users').select('*'),
                 supabase.from('products').select('*'),
                 supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(500),
                 supabase.from('clients').select('*'),
-                supabase.from('purchases').select('*').order('date', { ascending: false }).limit(200),
+                supabase.from('users').select('*'),
                 supabase.from('expenses').select('*').order('date', { ascending: false }).limit(200),
-                supabase.from('loyalty_transactions').select('*'),
-                supabase.from('settings').select('*').single()
+                supabase.from('purchases').select('*').order('date', { ascending: false }).limit(200),
+                supabase.from('loyalty_transactions').select('*').order('created_at', { ascending: false }),
+                supabase.from('settings').select('*').single() // Keep settingsData fetch
             ]);
 
-            if (users) set({ users: users as any[] });
+            if (users) {
+                const mappedUsers: User[] = users.map((u: any) => ({
+                    ...u,
+                    lastActive: u.last_active,
+                    lastAction: u.last_action
+                }));
+                set({ users: mappedUsers as any[] });
+            }
             if (products) {
                 const mappedProducts: Product[] = products.map((p: any) => ({
                     id: p.id,
@@ -580,6 +589,17 @@ export const useStore = create<AppState>()(
                 await supabase.from('products').upsert(mapped, { onConflict: 'sku' });
                 const { data } = await supabase.from('products').select('*');
                 if (data) set({ products: data as any[] });
+            }
+        },
+        fetchUsers: async () => {
+            const { data } = await supabase.from('users').select('*');
+            if (data) {
+                const mappedUsers: User[] = data.map((u: any) => ({
+                    ...u,
+                    lastActive: u.last_active,
+                    lastAction: u.last_action
+                }));
+                set({ users: mappedUsers });
             }
         },
         addSale: async (sale) => {

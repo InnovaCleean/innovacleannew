@@ -29,6 +29,7 @@ export function Layout({ children }: LayoutProps) {
     const logout = useStore((state) => state.logout);
     const settings = useStore((state) => state.settings);
     const updateUserActivity = useStore((state) => state.updateUserActivity);
+    const fetchUsers = useStore((state) => state.fetchUsers);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Heartbeat for "Online" status
@@ -37,14 +38,16 @@ export function Layout({ children }: LayoutProps) {
 
         // Initial "I am here"
         updateUserActivity('Navegando: ' + location.pathname);
+        fetchUsers(); // Initial fetch to see others
 
-        // Heartbeat every 2 minutes
+        // Heartbeat every 2 minutes (updates my status AND fetches others)
         const interval = setInterval(() => {
             updateUserActivity('Activo (Heartbeat)');
-        }, 120000); // 2 minutes
+            fetchUsers();
+        }, 30000); // 30 seconds for faster updates (user asked for visibility)
 
         return () => clearInterval(interval);
-    }, [user?.id, location.pathname, updateUserActivity]);
+    }, [user?.id, location.pathname, updateUserActivity, fetchUsers]);
 
     const links = [
         { name: 'Ventas', href: '/sales', icon: ShoppingCart, roles: ['admin', 'seller'] },
