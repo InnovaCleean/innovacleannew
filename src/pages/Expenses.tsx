@@ -124,17 +124,14 @@ export default function Expenses() {
                                 expenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3 text-slate-500 font-mono text-xs">
-                                            {(() => {
-                                                const [y, m, d] = expense.date.split('-');
-                                                return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('es-MX');
-                                            })()}
                                             {new Date(expense.created_at || expense.date).toLocaleString('es-MX', {
                                                 year: 'numeric',
                                                 month: '2-digit',
                                                 day: '2-digit',
                                                 hour: '2-digit',
                                                 minute: '2-digit',
-                                                hour12: true
+                                                hour12: true,
+                                                timeZone: 'America/Mexico_City'
                                             })}
                                         </td>
                                         <td className="px-6 py-3 font-medium text-slate-900">

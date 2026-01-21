@@ -362,7 +362,7 @@ export default function CashFlow() {
                                             // "20/1/2026, 12:00:00 p.m."
                                             return d.toLocaleString('es-MX', {
                                                 year: 'numeric', month: 'numeric', day: 'numeric',
-                                                hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true
+                                                hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true, timeZone: 'America/Mexico_City'
                                             });
                                         } catch (e) {
                                             return item.date;
