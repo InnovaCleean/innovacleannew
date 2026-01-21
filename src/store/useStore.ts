@@ -467,6 +467,20 @@ export const useStore = create<AppState>()(
 
                 return { user: updatedUser, users: updatedUsers };
             });
+
+            // Persist to DB (Fire and forget, don't await to avoid blocking UI)
+            if (get().user?.id) {
+                // Check if columns exist? We assuming user ran migration. 
+                // We use 'last_active' and 'last_action' (snake_case for DB)
+                // We can't easily check schema here, so we hope for best. 
+                // Any error will be caught by console.error usually if we added .then().catch()
+                supabase.from('users').update({
+                    last_active: NOW,
+                    last_action: action
+                }).eq('id', get().user?.id).then(({ error }) => {
+                    if (error) console.warn('Failed to update activity in DB:', error.message);
+                });
+            }
         },
         deleteUser: async (id) => {
             await supabase.from('users').delete().eq('id', id);

@@ -44,7 +44,7 @@ export function Layout({ children }: LayoutProps) {
         }, 120000); // 2 minutes
 
         return () => clearInterval(interval);
-    }, [user, location.pathname, updateUserActivity]);
+    }, [user?.id, location.pathname, updateUserActivity]);
 
     const links = [
         { name: 'Ventas', href: '/sales', icon: ShoppingCart, roles: ['admin', 'seller'] },
