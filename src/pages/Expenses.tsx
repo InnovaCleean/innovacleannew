@@ -128,6 +128,14 @@ export default function Expenses() {
                                                 const [y, m, d] = expense.date.split('-');
                                                 return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('es-MX');
                                             })()}
+                                            {new Date(expense.created_at || expense.date).toLocaleString('es-MX', {
+                                                year: 'numeric',
+                                                month: '2-digit',
+                                                day: '2-digit',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                hour12: true
+                                            })}
                                         </td>
                                         <td className="px-6 py-3 font-medium text-slate-900">
                                             {expense.description}

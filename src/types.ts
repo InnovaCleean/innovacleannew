@@ -53,6 +53,7 @@ export interface Expense {
     type: ExpenseType;
     category: string; // e.g., 'Renta', 'Luz', 'Sueldos', 'Materia Prima'
     date: string;
+    created_at?: string; // Added for timestamp display
     userId: string;
     userName: string;
 }

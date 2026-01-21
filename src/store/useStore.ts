@@ -203,6 +203,7 @@ export const useStore = create<AppState>()(
                     type: e.type,
                     category: e.category,
                     date: e.date,
+                    created_at: e.created_at,
                     userId: e.user_id,
                     userName: e.user_name || 'Desconocido'
                 }));

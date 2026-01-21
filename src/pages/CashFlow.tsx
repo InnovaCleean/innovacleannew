@@ -143,10 +143,16 @@ export default function CashFlow() {
         // User said: "money that MUST exist in box... and when expense paid in cash it shows".
         // Use logic: Box Balance = Cash Sales + Deposits - Cash Expenses - Withdrawals return
 
-        // Expenses (Assuming all are cash for now unless Expense has payment method? Check types)
-        // Expense Type in `types.ts` only has 'fijo' | 'variable'. No payment method.
-        // We will assume EXPENSES ARE CASH for this calculation or explicit withdrawals.
-        const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+        // Expenses (Check for payment method in description)
+        // If description contains [Pago: Transferencia] or [Pago: Tarjeta], ignore for CASH BOX calculation
+        const cashExpenses = filteredExpenses.filter(e => {
+            const desc = e.description.toLowerCase();
+            if (desc.includes('[pago: transferencia]')) return false;
+            if (desc.includes('[pago: tarjeta]')) return false;
+            return true;
+        });
+
+        const totalExpenses = cashExpenses.reduce((sum, e) => sum + e.amount, 0);
         const totalWithdrawals = filteredMovements.filter(m => m.type === 'withdrawal').reduce((sum, m) => sum + m.amount, 0);
 
         const netCash = cashIn - totalExpenses - totalWithdrawals;
