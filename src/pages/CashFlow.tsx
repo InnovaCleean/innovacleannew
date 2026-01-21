@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
-import { Banknote, CreditCard, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Banknote, ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency, parseCDMXDate } from '../lib/utils';
 
 type MovementType = 'deposit' | 'withdrawal';
@@ -171,18 +171,42 @@ export default function CashFlow() {
 
                     // Special handling for date
                     if (sortConfig.key === 'date') {
-                        valA = a.entryType === 'expense' ? parseCDMXDate(a.date).getTime() : new Date(a.date).getTime();
-                        valB = b.entryType === 'expense' ? parseCDMXDate(b.date).getTime() : new Date(b.date).getTime();
+                        // Expenses might have different format now, but we parse them
+                        const tA = parseCDMXDate(a.date).getTime();
+                        const tB = parseCDMXDate(b.date).getTime();
+                        valA = tA;
+                        valB = tB;
                     }
 
-                    // Special handling for Amount (expense = negative logic for sorting?)
-                    // User probably wants absolute magnitude or actual flow? 
-                    // Usually "Monto" column shows absolute in table, but mathematically it's flow.
-                    // Let's sort by Absolute Magnitude as displayed in table, OR by actual value.
-                    // Let's stick to actual Value.
                     if (sortConfig.key === 'amount') {
-                        valA = (a.entryType === 'expense' || (a.entryType === 'movement' && a.type === 'withdrawal')) ? -a.amount : a.amount;
-                        valB = (b.entryType === 'expense' || (b.entryType === 'movement' && b.type === 'withdrawal')) ? -b.amount : b.amount;
+                        // Sort by Actual Value (Cash Flow Impact)
+                        // Expenses/Withdrawals are negative, Deposits/Sales are positive
+                        const getVal = (item: any) => {
+                            if (item.entryType === 'expense') return -item.amount;
+                            if (item.entryType === 'movement' && item.type === 'withdrawal') return -item.amount;
+                            if (item.entryType === 'movement' && item.type === 'deposit') return item.amount;
+                            // Sales
+                            return item.amount;
+                        };
+                        valA = getVal(a);
+                        valB = getVal(b);
+                    }
+
+                    if (sortConfig.key === 'concept') {
+                        valA = (a.entryType === 'sale' ? `Venta Folio ${a.folio}` : (a.description || a.product_name || '')).toLowerCase();
+                        valB = (b.entryType === 'sale' ? `Venta Folio ${b.folio}` : (b.description || b.product_name || '')).toLowerCase();
+                    }
+
+                    if (sortConfig.key === 'type') {
+                        // We need the label
+                        const getLabel = (item: any) => {
+                            if (item.entryType === 'sale') return item.paymentMethod || '';
+                            if (item.entryType === 'expense') return 'Gasto';
+                            if (item.entryType === 'movement') return item.type === 'deposit' ? 'Ingreso Manual' : 'Retiro Manual';
+                            return '';
+                        };
+                        valA = getLabel(a).toLowerCase();
+                        valB = getLabel(b).toLowerCase();
                     }
 
                     if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -196,7 +220,7 @@ export default function CashFlow() {
                 return dateB - dateA;
             })
         };
-    }, [startDate, endDate, sales, expenses, manualMovements]);
+    }, [startDate, endDate, sales, expenses, manualMovements, sortConfig]);
 
     return (
         <Layout>
@@ -281,8 +305,12 @@ export default function CashFlow() {
                                     <th onClick={() => handleSort('date')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
                                         Fecha <SortIcon columnKey="date" />
                                     </th>
-                                    <th className="px-6 py-3">Concepto</th>
-                                    <th className="px-6 py-3">Tipo</th>
+                                    <th onClick={() => handleSort('concept')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
+                                        Concepto <SortIcon columnKey="concept" />
+                                    </th>
+                                    <th onClick={() => handleSort('type')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
+                                        Tipo <SortIcon columnKey="type" />
+                                    </th>
                                     <th onClick={() => handleSort('amount')} className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100 select-none">
                                         Monto <SortIcon columnKey="amount" />
                                     </th>
@@ -319,19 +347,21 @@ export default function CashFlow() {
                                         color = item.type === 'deposit' ? 'text-emerald-600' : 'text-orange-500';
                                     }
 
-                                    const isExpense = item.entryType === 'expense';
-                                    const displayDate = isExpense
-                                        ? (() => {
+                                    const displayDate = (() => {
+                                        // Try to parse as full date first
+                                        try {
                                             const d = parseCDMXDate(item.date);
-                                            // Set to end of day? Or just 12:00?
-                                            // User requests "Same format".
-                                            // Real sales have "dd/mm/aaaa, hh:mm:ss p.m."
-                                            // We'll fake a time for aesthetic consistency, preferably 00:00:00 or current?
-                                            // "20/1/2026, 00:00:00 a. m."
-                                            d.setHours(0, 0, 0);
-                                            return d.toLocaleString() + ' (Gasto)';
-                                        })()
-                                        : new Date(item.date).toLocaleString();
+                                            // Ensure we display time if it exists (not midnight)
+                                            // If it is midnight (older expenses), format might hide it, but user wants consistency.
+                                            // "20/1/2026, 12:00:00 p.m."
+                                            return d.toLocaleString('es-MX', {
+                                                year: 'numeric', month: 'numeric', day: 'numeric',
+                                                hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true
+                                            });
+                                        } catch (e) {
+                                            return item.date;
+                                        }
+                                    })();
 
                                     return (
                                         <tr key={i} className={`hover:bg-slate-50 ${item.isCancelled ? 'opacity-60 bg-red-50' : ''}`}>

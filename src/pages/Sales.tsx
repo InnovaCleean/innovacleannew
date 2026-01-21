@@ -1203,14 +1203,7 @@ export default function Sales() {
                                         <FileText className="w-5 h-5" />
                                     </button>
                                 </div>
-                                <button
-                                    onClick={() => setIsDetailModalOpen(false)}
-                                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 font-medium md:px-4 md:py-2"
-                                    title="Cerrar"
-                                >
-                                    <span className="hidden md:inline">Cerrar</span>
-                                    <span className="md:hidden">X</span>
-                                </button>
+
                                 {isAdmin && !activeFolioData.isCancelled && (
                                     <button
                                         onClick={() => handleCancelFolio(activeFolioData.folio)}

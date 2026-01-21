@@ -18,7 +18,7 @@ export default function Expenses() {
         amount: 0,
         type: 'variable',
         category: 'General',
-        date: new Date().toLocaleDateString('en-CA'),
+        date: new Date().toLocaleDateString('en-CA'), // Initial view value, but we'll send full ISO on submit
         paymentMethod: 'cash'
     });
 
@@ -36,11 +36,35 @@ export default function Expenses() {
             finalDesc += ` [Pago: ${methodLabel}]`;
         }
 
+        // Create full ISO string with current time for correct sorting
+        const now = new Date();
+
+
+        // If today, use current time. If other day, use 12:00 or current time? 
+        // User wants "same format ... date and time".
+        // If they pick "Today", we want "Now". If they pick "Yesterday", we probably want "End of Yesterday" or "Yesterday 12:00"?
+        // Let's preserve the selected date component but add current time components if it's today, otherwise 12:00 pm.
+        let finalDateStr = newExpense.date;
+
+        const todayStr = now.toLocaleDateString('en-CA');
+        if (newExpense.date === todayStr) {
+            // It's today, use current timestamp but ensure YYYY-MM-DD matches
+            finalDateStr = now.toISOString();
+        } else {
+            // Past/Future date: Append a fixed time like 12:00 PM to avoid timezone shift to previous day
+            // and act as "mid-day" for sorting? Or maybe End of Day?
+            // User wants to order: "Latest first".
+            // Let's use 23:59:59 for past dates so they appear at top of that day?
+            // Or 12:00. Let's use 12:00 PM local.
+            finalDateStr = `${newExpense.date}T12:00:00`;
+        }
+
         await addExpense({
             ...newExpense,
             description: finalDesc,
-            userId: user.id || '00000000-0000-0000-0000-000000000000', // Fallback UUID if user issue, though access check should prevent
+            userId: user.id || '00000000-0000-0000-0000-000000000000',
             userName: user.name || 'Usuario',
+            date: finalDateStr
         } as Expense);
 
         setIsModalOpen(false);

@@ -37,6 +37,7 @@ interface AppState {
     addUser: (user: User) => void;
     updateUser: (id: string, updates: Partial<User>) => void;
     deleteUser: (id: string) => void;
+    updateUserActivity: (action: string) => void;
 
     // Admin Sale Mgmt
     deleteSale: (id: string, reason: string) => void;
@@ -270,7 +271,19 @@ export const useStore = create<AppState>()(
 
         login: async (user) => {
             const { data } = await supabase.from('users').select('*').eq('username', user.username).eq('password', user.password).single();
-            if (data) set({ user: data as any });
+            if (data) {
+                const NOW = getCDMXISOString();
+                // Update user activity on login
+                set((state) => {
+                    const updatedUsers = state.users.map(u =>
+                        u.id === data.id ? { ...u, lastActive: NOW, lastAction: 'Inicio de Sesión' } : u
+                    );
+                    return {
+                        user: { ...data as User, lastActive: NOW, lastAction: 'Inicio de Sesión' },
+                        users: updatedUsers
+                    };
+                });
+            }
         },
         logout: () => set({ user: null }),
         setTheme: async (themeId) => {
@@ -433,6 +446,20 @@ export const useStore = create<AppState>()(
                 return { users: updatedUsers, user: currentUser as User };
             });
         },
+        updateUserActivity: (action: string) => {
+            const NOW = getCDMXISOString();
+            set((state) => {
+                if (!state.user) return {};
+                const updatedUser = { ...state.user, lastActive: NOW, lastAction: action };
+
+                // Also update in the users list so Admin can see it
+                const updatedUsers = state.users.map(u =>
+                    u.id === state.user?.id ? { ...u, lastActive: NOW, lastAction: action } : u
+                );
+
+                return { user: updatedUser, users: updatedUsers };
+            });
+        },
         deleteUser: async (id) => {
             await supabase.from('users').delete().eq('id', id);
             set((state) => ({
@@ -473,6 +500,7 @@ export const useStore = create<AppState>()(
                     userName: data.user_name || expense.userName
                 };
                 set((state) => ({ expenses: [newExpense, ...state.expenses] }));
+                get().updateUserActivity(`Registró gasto: ${expense.description}`);
             }
         },
 
@@ -671,6 +699,7 @@ export const useStore = create<AppState>()(
             }
 
             get().fetchInitialData();
+            get().updateUserActivity(`Registró venta Folio ${nextFolio}`);
         },
         addLoyaltyTransaction: async (t) => {
             await supabase.from('loyalty_transactions').insert([t]);
@@ -868,6 +897,7 @@ export const useStore = create<AppState>()(
                 const newStock = prod.stock_current + purchase.quantity;
                 await supabase.from('products').update({ stock_current: newStock }).eq('sku', purchase.sku);
                 set((state) => ({ products: state.products.map(p => p.sku === purchase.sku ? { ...p, stockCurrent: newStock } : p) }));
+                get().updateUserActivity(`Registró compra: ${purchase.quantity}u ${purchase.productName || purchase.sku}`);
             }
             if (data) {
                 const mappedPurchase: Purchase = {

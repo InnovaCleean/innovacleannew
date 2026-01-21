@@ -11,6 +11,8 @@ export interface User {
     startDate?: string; // ISO Date string
     active?: boolean;
     avatar?: string; // Base64 image
+    lastActive?: string; // ISO date of last interaction
+    lastAction?: string; // Description of last action
 }
 
 export interface Client {

@@ -139,6 +139,7 @@ export default function Users() {
                                 <th className="px-6 py-4 min-w-[200px] border-b border-primary-700">Nombre</th>
                                 <th className="px-6 py-4 min-w-[120px] border-b border-primary-700">Usuario</th>
                                 <th className="px-6 py-4 min-w-[140px] border-b border-primary-700">Rol</th>
+                                <th className="px-6 py-4 min-w-[180px] border-b border-primary-700">Estado / Actividad</th>
                                 <th className="px-6 py-4 min-w-[180px] border-b border-primary-700">Contacto</th>
                                 <th className="px-6 py-4 min-w-[120px] border-b border-primary-700">Ingreso</th>
                                 <th className="px-6 py-4 min-w-[150px] border-b border-primary-700">Antigüedad</th>
@@ -174,6 +175,37 @@ export default function Users() {
                                             {u.role === 'admin' ? <Shield className="w-3 h-3" /> : <UserIcon className="w-3 h-3" />}
                                             {u.role === 'admin' ? 'Administrador' : 'Vendedor'}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center gap-2">
+                                                {(() => {
+                                                    const now = new Date();
+                                                    const last = u.lastActive ? new Date(u.lastActive) : null;
+                                                    const diffMins = last ? (now.getTime() - last.getTime()) / 1000 / 60 : 999999;
+                                                    const isOnline = diffMins < 5;
+
+                                                    return (
+                                                        <>
+                                                            <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                                                            <span className={`text-xs font-bold ${isOnline ? 'text-green-700' : 'text-slate-400'}`}>
+                                                                {isOnline ? 'En línea' : 'Desconectado'}
+                                                            </span>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                            {u.lastAction && (
+                                                <span className="text-[10px] text-slate-500 font-medium truncate max-w-[150px]" title={u.lastAction}>
+                                                    {u.lastAction}
+                                                </span>
+                                            )}
+                                            {u.lastActive && (
+                                                <span className="text-[9px] text-slate-400">
+                                                    {new Date(u.lastActive).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-xs text-slate-500">
                                         <div>{u.email || '-'}</div>

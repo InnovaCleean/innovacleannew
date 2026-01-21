@@ -23,17 +23,27 @@ export const parseProductsExcel = (file: File): Promise<Partial<Product>[]> => {
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet);
 
+                const cleanNumber = (val: any) => {
+                    if (typeof val === 'number') return val;
+                    if (!val) return 0;
+                    // Remove all non-numeric chars except dot and minus
+                    // Handle $1,200.50 -> 1200.50
+                    const str = String(val).replace(/[^0-9.-]/g, '');
+                    const num = parseFloat(str);
+                    return isNaN(num) ? 0 : num;
+                };
+
                 const products: Partial<Product>[] = json.map((row: any) => ({
                     sku: String(row.SKU || row.sku || '').trim(),
                     category: String(row.Categoría || row.category || 'General').trim(),
                     name: String(row.Nombre || row.name || '').trim(),
                     unit: String(row['Unidad de Medida'] || row.unit || 'Litro').trim(),
-                    stockCurrent: Number(row.Stock || row.stockCurrent || 0),
-                    stockInitial: Number(row.Stock || row.stockInitial || 0),
-                    cost: Number(row.Costo || row.cost || 0),
-                    priceRetail: Number(row.Menudeo || row.priceRetail || 0),
-                    priceMedium: Number(row.Medio || row.priceMedium || 0),
-                    priceWholesale: Number(row.Mayoreo || row.priceWholesale || 0),
+                    stockCurrent: cleanNumber(row.Stock || row.stockCurrent),
+                    stockInitial: cleanNumber(row.Stock || row.stockInitial),
+                    cost: cleanNumber(row.Costo || row.cost),
+                    priceRetail: cleanNumber(row.Menudeo || row.priceRetail),
+                    priceMedium: cleanNumber(row.Medio || row.priceMedium),
+                    priceWholesale: cleanNumber(row.Mayoreo || row.priceWholesale),
                 }));
 
                 resolve(products.filter(p => p.sku && p.name));

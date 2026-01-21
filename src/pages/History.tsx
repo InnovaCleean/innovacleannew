@@ -306,6 +306,24 @@ export default function History() {
                                 <FileText className="w-4 h-4" />
                                 PDF
                             </button>
+                            {/* Reset Button (Protected) */}
+                            <button
+                                onClick={() => {
+                                    const pwd = prompt('INGRESE CONTRASEÑA DE ADMINISTRADOR:');
+                                    if (pwd === 'Geld9eg5.@') {
+                                        if (confirm('ADVERTENCIA CRÍTICA: ¿ESTÁ SEGURO? Se eliminarán TODAS las ventas y clientes (excepto General).')) {
+                                            resetDataForDeployment();
+                                            alert('Base de datos limpiada para despliegue.');
+                                        }
+                                    } else {
+                                        alert('Acceso Denegado: Requiere autorización del desarrollador.');
+                                    }
+                                }}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-bold transition-all shadow-lg shadow-slate-800/20 text-xs"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                LIMPIAR BD
+                            </button>
                         </div>
                     </div>
 
@@ -313,14 +331,16 @@ export default function History() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                             <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Ventas</p>
-                            <p className="text-lg font-black text-slate-800">
-                                {sortedGroupedSales.filter(g => !g.isCancelled).length}
+                            <div className="flex items-baseline gap-2">
+                                <p className="text-lg font-black text-slate-800">
+                                    {sortedGroupedSales.filter(g => !g.isCancelled).length}
+                                </p>
                                 {sortedGroupedSales.some(g => g.isCancelled) && (
-                                    <span className="text-sm text-red-400 ml-1">
-                                        ({sortedGroupedSales.filter(g => g.isCancelled).length} Canceladas)
+                                    <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-black uppercase">
+                                        {sortedGroupedSales.filter(g => g.isCancelled).length} Canceladas
                                     </span>
                                 )}
-                            </p>
+                            </div>
                         </div>
                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                             <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Ingreso Total</p>
@@ -473,34 +493,31 @@ export default function History() {
                     </table>
                 </div>
 
-                {/* Reset Button (Hidden usually, but requested for cleanup before deployment) */}
                 <div className="mt-4 flex justify-start">
-                    <button
-                        onClick={() => {
-                            if (confirm('¿ESTÁS SEGURO? Esto eliminará TODAS las ventas y clientes (excepto General). Esta acción no se puede deshacer.')) {
-                                resetDataForDeployment();
-                                alert('Datos limpiados con éxito. Listo para despliegue.');
-                            }
-                        }}
-                        className="text-[10px] text-slate-300 hover:text-red-500 font-bold uppercase transition-colors"
-                    >
-                        Limpiar base de datos para despliegue
-                    </button>
+                    {/* Previous Reset Button location removed */}
                 </div>
 
                 {/* Detail Modal */}
                 {isDetailModalOpen && selectedFolio && (
                     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
                         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
                                 <div>
                                     <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                                        FOLIO: {selectedFolio}
+                                        Folio: {selectedFolio}
                                         {sortedGroupedSales.find(g => g.folio === selectedFolio)?.isCancelled && (
                                             <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-black uppercase">CANCELADO</span>
                                         )}
                                     </h2>
-                                    <p className="text-xs text-slate-500 font-medium">Detalle auditado de la transacción</p>
+                                    <div className="flex gap-2 text-sm text-slate-500 font-medium mt-1">
+                                        <span className="font-bold text-primary-600 border-b border-dotted border-primary-300">
+                                            {formatDate(sortedGroupedSales.find(g => g.folio === selectedFolio)?.date || '')}
+                                        </span>
+                                        <span className="text-slate-300">|</span>
+                                        <span className="uppercase tracking-wide font-bold">
+                                            {sortedGroupedSales.find(g => g.folio === selectedFolio)?.clientName}
+                                        </span>
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setIsDetailModalOpen(false)}
@@ -513,26 +530,28 @@ export default function History() {
 
                             <div className="flex-1 overflow-auto p-6">
                                 <table className="w-full text-left text-sm">
-                                    <thead className="text-slate-400 font-bold text-[10px] uppercase border-b border-slate-100">
+                                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
                                         <tr>
-                                            <th className="pb-3 px-2">Producto</th>
-                                            <th className="pb-3 px-2 text-center">Cant</th>
-                                            <th className="pb-3 px-2 text-right">Precio</th>
-                                            <th className="pb-3 px-2 text-right">Subtotal</th>
-                                            <th className="pb-3 px-2 text-right">Acciones</th>
+                                            <th className="px-4 py-3">Producto</th>
+                                            <th className="px-4 py-3 text-center">Cant.</th>
+                                            <th className="px-4 py-3 text-center">Unidad</th>
+                                            <th className="px-4 py-3 text-right">Precio U.</th>
+                                            <th className="px-4 py-3 text-right">Subtotal</th>
+                                            <th className="px-4 py-3 text-right">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-50">
+                                    <tbody className="divide-y divide-slate-100">
                                         {sortedGroupedSales.find(g => g.folio === selectedFolio)?.items.map((item: any) => (
                                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="py-4 px-2">
-                                                    <div className="font-bold text-slate-800 text-xs">{item.sku}</div>
-                                                    <div className="text-[10px] text-slate-400 uppercase font-medium">{products.find(p => p.sku === item.sku)?.name || 'Producto'}</div>
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-slate-900">{products.find(p => p.sku === item.sku)?.name || 'Producto'}</div>
+                                                    <div className="text-xs text-slate-400">SKU: {item.sku}</div>
                                                 </td>
-                                                <td className="py-4 px-2 text-center font-mono font-bold text-xs">{item.quantity} {item.unit}</td>
-                                                <td className="py-4 px-2 text-right font-mono text-xs">{formatCurrency(item.priceUnit)}</td>
-                                                <td className="py-4 px-2 text-right font-mono font-bold text-xs text-primary-600">{formatCurrency(item.amount)}</td>
-                                                <td className="py-4 px-2 text-right">
+                                                <td className="px-4 py-3 text-center text-slate-700 font-bold">{item.quantity}</td>
+                                                <td className="px-4 py-3 text-center text-slate-400 font-bold uppercase text-[10px]">{item.unit || 'PIEZA'}</td>
+                                                <td className="px-4 py-3 text-right text-slate-600">{formatCurrency(item.priceUnit)}</td>
+                                                <td className="px-4 py-3 text-right font-bold text-slate-900">{formatCurrency(item.amount)}</td>
+                                                <td className="px-4 py-3 text-right">
                                                     <div className="flex justify-end gap-2 text-xs">
                                                         <button
                                                             onClick={() => {
@@ -569,11 +588,10 @@ export default function History() {
                                             </tr>
                                         ))}
                                     </tbody>
-                                    <tfoot>
-                                        <tr className="border-t-2 border-slate-100 bg-slate-50 font-black">
-                                            <td colSpan={3} className="py-4 px-2 text-right text-slate-500 uppercase text-[10px]">Total Folio</td>
-                                            <td className="py-4 px-2 text-right text-lg text-primary-700">{formatCurrency(sortedGroupedSales.find(g => g.folio === selectedFolio)?.amount || 0)}</td>
-                                            <td></td>
+                                    <tfoot className="bg-slate-50 font-bold">
+                                        <tr>
+                                            <td colSpan={5} className="px-4 py-4 text-right text-slate-600 uppercase tracking-tighter text-xs">Total de la Operación</td>
+                                            <td className="px-4 py-4 text-right text-2xl text-primary-700">{formatCurrency(sortedGroupedSales.find(g => g.folio === selectedFolio)?.amount || 0)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -581,39 +599,31 @@ export default function History() {
                                 {/* Payment Breakdown Section */}
                                 {(() => {
                                     const group = sortedGroupedSales.find(g => g.folio === selectedFolio);
-                                    // Assuming all items share the same payment details, take from first item
                                     const firstItem = group?.items[0];
-                                    if (firstItem?.paymentMethod === 'multiple' && firstItem.paymentDetails) {
-                                        return (
-                                            <div className="mt-6 rounded-lg overflow-hidden border border-slate-200">
-                                                {/* Purple Header */}
-                                                <div className="bg-purple-100 p-3 flex items-center gap-2">
-                                                    <DollarSign className="w-5 h-5 text-purple-700" />
-                                                    <h4 className="text-sm font-bold text-purple-800 uppercase tracking-widest">
-                                                        DESGLOSE DE PAGO (MIXTO)
-                                                    </h4>
-                                                </div>
 
-                                                {/* White Body */}
-                                                <div className="bg-white p-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        {Object.entries(firstItem.paymentDetails).map(([method, amount]) => {
-                                                            const map: Record<string, string> = {
-                                                                'cash': 'EFECTIVO',
-                                                                'card_credit': 'TARJETA CREDITO',
-                                                                'card_debit': 'TARJETA DEBITO',
-                                                                'transfer': 'TRANSFERENCIA',
-                                                                'wallet': 'MONEDERO',
-                                                                'multiple': 'MIXTO'
-                                                            };
-                                                            return (
-                                                                <div key={method} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100">
-                                                                    <span className="text-xs font-bold text-slate-500 uppercase">{map[method] || method}</span>
-                                                                    <span className="text-sm font-black text-slate-800">{formatCurrency(amount as number)}</span>
+                                    if (firstItem?.paymentMethod) {
+                                        return (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                                <div className={`p-4 rounded-lg border flex flex-col gap-2 ${firstItem.paymentMethod === 'multiple' ? 'bg-primary-50 border-primary-100' : 'bg-slate-50 border-slate-200'}`}>
+                                                    <h4 className={`text-sm font-bold flex items-center gap-2 uppercase ${firstItem.paymentMethod === 'multiple' ? 'text-primary-800' : 'text-slate-700'}`}>
+                                                        <DollarSign className="w-4 h-4" />
+                                                        Método de Pago: {firstItem.paymentMethod === 'multiple' ? 'Mixto' :
+                                                            firstItem.paymentMethod === 'cash' ? 'Efectivo' :
+                                                                (firstItem.paymentMethod === 'card_credit' || firstItem.paymentMethod === 'card_debit' || firstItem.paymentMethod === 'card') ? 'Tarjeta' :
+                                                                    firstItem.paymentMethod === 'transfer' ? 'Transferencia' :
+                                                                        firstItem.paymentMethod === 'wallet' ? 'Monedero' : firstItem.paymentMethod}
+                                                    </h4>
+
+                                                    {firstItem.paymentMethod === 'multiple' && firstItem.paymentDetails && (
+                                                        <div className="space-y-1 mt-1">
+                                                            {Object.entries(firstItem.paymentDetails).map(([method, amount]) => (
+                                                                <div key={method} className="flex justify-between text-sm">
+                                                                    <span className="capitalize text-primary-700 opacity-80">{method === 'cash' ? 'Efectivo' : (method === 'card' || method === 'card_credit' || method === 'card_debit') ? 'Tarjeta' : method === 'transfer' ? 'Transf.' : method === 'wallet' ? 'Monedero' : method}:</span>
+                                                                    <span className="font-bold text-primary-900">{formatCurrency(amount as number)}</span>
                                                                 </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -622,14 +632,8 @@ export default function History() {
                                 })()}
                             </div>
 
-                            <div className="p-6 border-t border-slate-100 flex justify-end">
-                                <button
-                                    onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-6 py-2 bg-slate-800 text-white rounded-xl font-black text-xs hover:bg-slate-700 transition-all shadow-lg shadow-slate-200"
-                                >
-                                    CERRAR
-                                </button>
-                            </div>
+                            {/* Footer (Empty/Minimal as requested, no Close button) */}
+                            <div className="p-4 border-t border-slate-100 bg-slate-50"></div>
                         </div>
                     </div>
                 )}
