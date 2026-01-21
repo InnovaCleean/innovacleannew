@@ -465,6 +465,9 @@ export default function Inventory() {
                                                 const val = e.target.value === '' ? 0 : parseInt(e.target.value);
                                                 setEditingProduct({ ...editingProduct, stockCurrent: val, stockInitial: isCreating ? val : editingProduct.stockInitial });
                                             }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                         />
                                     </div>
@@ -478,6 +481,9 @@ export default function Inventory() {
                                             onChange={(e) => {
                                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 setEditingProduct({ ...editingProduct, cost: val });
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
                                             }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
@@ -494,6 +500,9 @@ export default function Inventory() {
                                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 setEditingProduct({ ...editingProduct, priceRetail: val });
                                             }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />
@@ -509,6 +518,9 @@ export default function Inventory() {
                                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 setEditingProduct({ ...editingProduct, priceMedium: val });
                                             }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required
                                         />
@@ -523,6 +535,9 @@ export default function Inventory() {
                                             onChange={(e) => {
                                                 const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
                                                 setEditingProduct({ ...editingProduct, priceWholesale: val });
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
                                             }}
                                             className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 font-mono"
                                             required

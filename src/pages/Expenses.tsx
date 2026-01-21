@@ -44,18 +44,18 @@ export default function Expenses() {
         // User wants "same format ... date and time".
         // If they pick "Today", we want "Now". If they pick "Yesterday", we probably want "End of Yesterday" or "Yesterday 12:00"?
         // Let's preserve the selected date component but add current time components if it's today, otherwise 12:00 pm.
+        // Date Handling Logic:
+        // 1. If date from input matches today's date (local YYYY-MM-DD), use CURRENT EXACT TIME (ISO).
+        // 2. If past/future, append T12:00:00 to avoid timezone shifts and ensure it's mid-day.
         let finalDateStr = newExpense.date;
+        const nowLocal = new Date(); // Browser's local time (Source of truth for user)
+        const todayLocalStr = nowLocal.toLocaleDateString('en-CA'); // YYYY-MM-DD
 
-        const todayStr = now.toLocaleDateString('en-CA');
-        if (newExpense.date === todayStr) {
-            // It's today, use current timestamp but ensure YYYY-MM-DD matches
-            finalDateStr = now.toISOString();
+        if (newExpense.date === todayLocalStr) {
+            // Use current ISO string
+            finalDateStr = nowLocal.toISOString();
         } else {
-            // Past/Future date: Append a fixed time like 12:00 PM to avoid timezone shift to previous day
-            // and act as "mid-day" for sorting? Or maybe End of Day?
-            // User wants to order: "Latest first".
-            // Let's use 23:59:59 for past dates so they appear at top of that day?
-            // Or 12:00. Let's use 12:00 PM local.
+            // Force mid-day local to prevent rolling offset issues
             finalDateStr = `${newExpense.date}T12:00:00`;
         }
 
@@ -202,7 +202,14 @@ export default function Expenses() {
                                             value={newExpense.amount === 0 ? '' : newExpense.amount}
                                             onChange={e => {
                                                 const val = e.target.value;
+                                                // Prevent negative inputs
+                                                if (val.includes('-')) return;
                                                 setNewExpense({ ...newExpense, amount: val === '' ? 0 : parseFloat(val) })
+                                            }}
+                                            min="0"
+                                            step="0.01"
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
                                             }}
                                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none font-bold text-slate-700"
                                             placeholder="0.00"

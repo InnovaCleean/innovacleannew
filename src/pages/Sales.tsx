@@ -843,8 +843,11 @@ export default function Sales() {
                                         <div className="w-24 text-sm font-bold text-slate-600 uppercase">Monedero</div>
                                         <input
                                             type="number"
-                                            value={paymentSplits.wallet || ''}
-                                            onChange={e => handleSplitChange('wallet', Number(e.target.value))}
+                                            value={paymentSplits.wallet === 0 ? '' : paymentSplits.wallet}
+                                            onChange={e => handleSplitChange('wallet', e.target.value === '' ? 0 : Number(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                                             placeholder={`Max: ${formatCurrency(walletBalance)}`}
                                         />
@@ -854,8 +857,11 @@ export default function Sales() {
                                         <div className="w-24 text-sm font-bold text-slate-600 uppercase">Efectivo</div>
                                         <input
                                             type="number"
-                                            value={paymentSplits.cash || ''}
-                                            onChange={e => handleSplitChange('cash', Number(e.target.value))}
+                                            value={paymentSplits.cash === 0 ? '' : paymentSplits.cash}
+                                            onChange={e => handleSplitChange('cash', e.target.value === '' ? 0 : Number(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                                         />
                                     </div>
@@ -864,8 +870,11 @@ export default function Sales() {
                                         <div className="w-24 text-sm font-medium text-slate-600">T. Crédito</div>
                                         <input
                                             type="number"
-                                            value={paymentSplits.card_credit || ''}
-                                            onChange={e => handleSplitChange('card_credit', Number(e.target.value))}
+                                            value={paymentSplits.card_credit === 0 ? '' : paymentSplits.card_credit}
+                                            onChange={e => handleSplitChange('card_credit', e.target.value === '' ? 0 : Number(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                                         />
                                     </div>
@@ -874,8 +883,11 @@ export default function Sales() {
                                         <div className="w-24 text-sm font-medium text-slate-600">T. Débito</div>
                                         <input
                                             type="number"
-                                            value={paymentSplits.card_debit || ''}
-                                            onChange={e => handleSplitChange('card_debit', Number(e.target.value))}
+                                            value={paymentSplits.card_debit === 0 ? '' : paymentSplits.card_debit}
+                                            onChange={e => handleSplitChange('card_debit', e.target.value === '' ? 0 : Number(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                                         />
                                     </div>
@@ -884,8 +896,11 @@ export default function Sales() {
                                         <div className="w-24 text-sm font-medium text-slate-600">Transferencia</div>
                                         <input
                                             type="number"
-                                            value={paymentSplits.transfer || ''}
-                                            onChange={e => handleSplitChange('transfer', Number(e.target.value))}
+                                            value={paymentSplits.transfer === 0 ? '' : paymentSplits.transfer}
+                                            onChange={e => handleSplitChange('transfer', e.target.value === '' ? 0 : Number(e.target.value))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                            }}
                                             className="flex-1 px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
                                         />
                                     </div>

@@ -183,11 +183,14 @@ export default function Purchases() {
                                     <input
                                         type="number"
                                         min="1"
-                                        value={quantity.toString()}
+                                        value={quantity === 0 ? '' : quantity}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             // Allow empty for better UX
                                             setQuantity(val === '' ? 0 : Number(val));
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === '-' || e.key === 'e') e.preventDefault();
                                         }}
                                         className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                     />
@@ -210,6 +213,9 @@ export default function Purchases() {
                                     onChange={(e) => {
                                         const val = e.target.value;
                                         setCost(val === '' ? 0 : parseFloat(val));
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === '-' || e.key === 'e') e.preventDefault();
                                     }}
                                     placeholder="0.00"
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
@@ -341,9 +347,12 @@ export default function Purchases() {
                                 <input
                                     type="number"
                                     required
-                                    min="1"
+                                    min="0"
                                     value={editForm.quantity}
-                                    onChange={e => setEditForm(prev => ({ ...prev, quantity: Number(e.target.value) }))}
+                                    onChange={e => setEditForm(prev => ({ ...prev, quantity: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === '-' || e.key === 'e') e.preventDefault();
+                                    }}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                 />
                             </div>
@@ -358,6 +367,9 @@ export default function Purchases() {
                                     onChange={e => {
                                         const val = e.target.value;
                                         setEditForm(prev => ({ ...prev, costUnit: val === '' ? 0 : parseFloat(val) }))
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === '-' || e.key === 'e') e.preventDefault();
                                     }}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
                                 />
