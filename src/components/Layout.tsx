@@ -54,13 +54,6 @@ export function Layout({ children }: LayoutProps) {
 
     return (
         <div className="flex bg-slate-50 min-h-screen font-sans">
-            {/* Landscape Warning */}
-            <div id="orientation-warning" className="fixed inset-0 bg-slate-800 text-white flex flex-col items-center justify-center text-center p-4 z-[9999] md:hidden landscape:flex portrait:hidden">
-                <div className="mb-4 text-4xl">📱↔️</div>
-                <h2 className="text-xl font-bold mb-2">Gira tu dispositivo</h2>
-                <p className="text-slate-300">Para una mejor experiencia, utiliza la aplicación en modo vertical.</p>
-            </div>
-
             {/* Mobile Header */}
             <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-2">

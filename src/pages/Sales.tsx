@@ -1051,6 +1051,7 @@ export default function Sales() {
                                 <ClientForm
                                     onSubmit={handleNewClientSubmit}
                                     onCancel={() => setIsClientModalOpen(false)}
+                                    existingClients={clients}
                                 />
                             </div>
                         </div>

@@ -166,15 +166,17 @@ export default function Loyalty() {
 
                             {/* Activation / Verification Section */}
                             <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
-                                {(!activeClient.walletStatus || activeClient.walletStatus === 'inactive') && (
-                                    <button
-                                        onClick={() => handleRequestActivation(activeClient)}
-                                        className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-2"
-                                    >
-                                        <Smartphone className="w-4 h-4" />
-                                        Solicitar Alta de Monedero (Modo Pendiente)
-                                    </button>
-                                )}
+                                {(!activeClient.walletStatus || activeClient.walletStatus === 'inactive') &&
+                                    activeClient.name !== 'PÚBLICO GENERAL' &&
+                                    !activeClient.name.toUpperCase().includes('PUBLICO GENERAL') && (
+                                        <button
+                                            onClick={() => handleRequestActivation(activeClient)}
+                                            className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-2"
+                                        >
+                                            <Smartphone className="w-4 h-4" />
+                                            Solicitar Alta de Monedero (Modo Pendiente)
+                                        </button>
+                                    )}
 
                                 {activeClient.walletStatus === 'pending' && (
                                     <div className="flex items-center gap-4 animate-in fade-in">

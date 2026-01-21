@@ -148,6 +148,7 @@ export const useStore = create<AppState>()(
                     clientId: s.client_id,
                     clientName: s.client_name,
                     isCorrection: s.is_correction,
+                    isCancelled: s.is_cancelled, // Ensure this is mapped!
                     correctionNote: s.correction_note,
                     unit: 'Pieza'
                 }));
@@ -345,8 +346,14 @@ export const useStore = create<AppState>()(
                 const existing = get().clients.find(c => c.phone === client.phone);
                 if (existing) {
                     alert(`Error: Ya existe un cliente con el número ${client.phone} (${existing.name})`);
+                    alert(`Error: Ya existe un cliente con el número ${client.phone} (${existing.name})`);
                     return;
                 }
+            }
+            // Block Public General Creation
+            if (client.name.toUpperCase().includes('PÚBLICO GENERAL') || client.name.toUpperCase().includes('PUBLICO GENERAL')) {
+                alert('No se puede registrar un nuevo cliente con el nombre "PÚBLICO GENERAL".');
+                return;
             }
 
             const { data } = await supabase.from('clients').insert([{

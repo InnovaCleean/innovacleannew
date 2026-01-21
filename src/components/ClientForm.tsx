@@ -12,6 +12,7 @@ interface ClientFormProps {
 export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel, existingClients = [] }) => {
     const [nameSuggestions, setNameSuggestions] = useState<Client[]>([]);
     const [phoneDuplicate, setPhoneDuplicate] = useState<Client | null>(null);
+    const [nameDuplicate, setNameDuplicate] = useState<Client | null>(null);
     const [formData, setFormData] = useState<Omit<Client, 'id'>>({
         name: '',
         rfc: '',
@@ -126,34 +127,52 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         }
     };
 
-    const handleChange = (field: keyof Omit<Client, 'id'>, value: string) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, isUpperCase: boolean = false) => {
+        const { name, value } = e.target;
         let finalValue = value;
 
         // Phone Mask
-        if (field === 'phone') {
+        if (name === 'phone') {
             finalValue = formatPhone(value);
+        } else if (isUpperCase) {
+            finalValue = value.toUpperCase();
+        }
 
-            // Check for duplicate phone
-            const cleanPhone = finalValue.replace(/\D/g, '');
-            if (cleanPhone.length >= 10 && existingClients) {
-                const dup = existingClients.find(c =>
-                    c.id !== initialData?.id &&
-                    c.phone?.replace(/\D/g, '') === cleanPhone
-                );
-                setPhoneDuplicate(dup || null);
-            } else {
-                setPhoneDuplicate(null);
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
+
+        // Duplicate Checks
+        if (existingClients.length > 0) {
+            // Phone duplicate check
+            if (name === 'phone') {
+                const cleanPhone = finalValue.replace(/\D/g, '');
+                if (cleanPhone.length >= 10) {
+                    const dup = existingClients.find(c =>
+                        c.id !== initialData?.id &&
+                        c.phone?.replace(/\D/g, '') === cleanPhone
+                    );
+                    setPhoneDuplicate(dup || null);
+                } else {
+                    setPhoneDuplicate(null);
+                }
             }
-        } else {
-            // Uppercase enforcement for specific fields
-            const upperFields = ['name', 'address', 'colonia', 'city', 'state', 'rfc'];
-            if (upperFields.includes(field)) {
-                finalValue = value.toUpperCase();
+
+            // Name duplicate check
+            if (name === 'name') {
+                const valUpper = finalValue.toUpperCase();
+                if (valUpper.length > 3) {
+                    const dup = existingClients.find(c =>
+                        c.id !== initialData?.id &&
+                        c.name.toUpperCase() === valUpper
+                    );
+                    setNameDuplicate(dup || null);
+                } else {
+                    setNameDuplicate(null);
+                }
             }
         }
 
-        // Name suggestions logic
-        if (field === 'name') {
+        // Name suggestions logic (distinct from exact name duplicate)
+        if (name === 'name') {
             if (finalValue.length > 2 && existingClients) {
                 const matches = existingClients.filter(c =>
                     c.id !== initialData?.id &&
@@ -165,9 +184,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             }
         }
 
-        setFormData(prev => ({ ...prev, [field]: finalValue }));
-
-        if (field === 'zipCode' && value.length === 5) {
+        if (name === 'zipCode' && value.length === 5) {
             handleZipLookup(value);
         }
     };
@@ -191,14 +208,22 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nombre / Razón Social *</label>
-                    <input
-                        type="text"
-                        required
-                        value={formData.name}
-                        onChange={(e) => handleChange('name', e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 uppercase"
-                        placeholder="NOMBRE COMPLETO"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            name="name"
+                            required
+                            value={formData.name}
+                            onChange={(e) => handleChange(e, true)}
+                            className={`w-full px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-primary-500 uppercase ${nameDuplicate ? 'border-red-300 bg-red-50' : 'border-slate-300'}`}
+                            placeholder="NOMBRE COMPLETO"
+                        />
+                        {nameDuplicate && (
+                            <div className="absolute z-10 w-full mt-1 bg-red-100 border border-red-200 text-red-700 text-xs p-2 rounded flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                                <span className="font-bold">¡Atención!</span> Ya existe un cliente con este nombre.
+                            </div>
+                        )}
+                    </div>
                     {nameSuggestions.length > 0 && (
                         <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
                             <p className="text-xs font-bold text-yellow-700 mb-1">Posibles duplicados encontrados:</p>
@@ -215,8 +240,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">RFC</label>
                     <input
                         type="text"
+                        name="rfc" // Add name attribute
                         value={formData.rfc}
-                        onChange={(e) => handleChange('rfc', e.target.value)}
+                        onChange={(e) => handleChange(e, true)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         placeholder="XAXX010101000"
                     />
@@ -226,8 +252,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
                     <input
                         type="tel"
+                        name="phone" // Add name attribute
                         value={formData.phone}
-                        onChange={(e) => handleChange('phone', e.target.value)}
+                        onChange={handleChange}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg"
                         placeholder="(###) ###-####"
                         maxLength={14}
@@ -246,8 +273,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                     <input
                         type="email"
+                        name="email"
                         value={formData.email}
-                        onChange={(e) => handleChange('email', e.target.value)}
+                        onChange={(e) => handleChange(e)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg"
                         placeholder="cliente@empresa.com"
                     />
@@ -265,10 +293,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <div className="relative">
                         <input
                             type="text"
+                            name="zipCode"
                             required
                             maxLength={5}
                             value={formData.zipCode}
-                            onChange={(e) => handleChange('zipCode', e.target.value)}
+                            onChange={(e) => handleChange(e)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg"
                             placeholder="00000"
                         />
@@ -282,8 +311,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
                     <input
                         type="text"
+                        name="state"
                         value={formData.state}
-                        onChange={(e) => handleChange('state', e.target.value)}
+                        onChange={(e) => handleChange(e, true)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-50 uppercase"
                     />
                 </div>
@@ -292,8 +322,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Ciudad / Municipio</label>
                     {availableCities.length > 1 ? (
                         <select
+                            name="city"
                             value={formData.city}
-                            onChange={(e) => handleChange('city', e.target.value)}
+                            onChange={(e) => handleChange(e, true)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         >
                             <option value="">SELECCIONAR CIUDAD</option>
@@ -304,8 +335,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     ) : (
                         <input
                             type="text"
+                            name="city"
                             value={formData.city}
-                            onChange={(e) => handleChange('city', e.target.value)}
+                            onChange={(e) => handleChange(e, true)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         />
                     )}
@@ -315,8 +347,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Colonia</label>
                     {availableColonias.length > 0 ? (
                         <select
+                            name="colonia"
                             value={formData.colonia}
-                            onChange={(e) => handleChange('colonia', e.target.value)}
+                            onChange={(e) => handleChange(e, true)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         >
                             <option value="">SELECCIONAR COLONIA</option>
@@ -327,8 +360,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     ) : (
                         <input
                             type="text"
+                            name="colonia"
                             value={formData.colonia}
-                            onChange={(e) => handleChange('colonia', e.target.value)}
+                            onChange={(e) => handleChange(e, true)}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         />
                     )}
@@ -338,8 +372,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     <label className="block text-sm font-medium text-slate-700 mb-1">Calle y Número</label>
                     <input
                         type="text"
+                        name="address"
                         value={formData.address}
-                        onChange={(e) => handleChange('address', e.target.value)}
+                        onChange={(e) => handleChange(e, true)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg uppercase"
                         placeholder="AV. REFORMA 123"
                     />

@@ -147,7 +147,11 @@ export default function CashFlow() {
                 ...relevantSales.map(s => ({ entryType: 'sale', ...s })),
                 ...filteredExpenses.map(e => ({ entryType: 'expense', ...e })),
                 ...filteredMovements.map(m => ({ entryType: 'movement', ...m }))
-            ].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            ].sort((a: any, b: any) => {
+                const dateA = a.entryType === 'expense' ? parseCDMXDate(a.date).getTime() : new Date(a.date).getTime();
+                const dateB = b.entryType === 'expense' ? parseCDMXDate(b.date).getTime() : new Date(b.date).getTime();
+                return dateB - dateA;
+            })
         };
     }, [startDate, endDate, sales, expenses, manualMovements]);
 
@@ -268,9 +272,16 @@ export default function CashFlow() {
                                         color = item.type === 'deposit' ? 'text-emerald-600' : 'text-orange-500';
                                     }
 
+                                    const isExpense = item.entryType === 'expense';
+                                    const displayDate = isExpense
+                                        ? parseCDMXDate(item.date).toLocaleDateString() + ' (Gasto)'
+                                        : new Date(item.date).toLocaleString();
+
                                     return (
                                         <tr key={i} className={`hover:bg-slate-50 ${item.isCancelled ? 'opacity-60 bg-red-50' : ''}`}>
-                                            <td className="px-6 py-3 text-slate-500">{new Date(item.date).toLocaleString()}</td>
+                                            <td className="px-6 py-3 text-slate-500 whitespace-nowrap">
+                                                {displayDate}
+                                            </td>
                                             <td className="px-6 py-3">
                                                 <div className={`font-medium text-slate-800 ${item.isCancelled ? 'line-through text-red-500' : ''}`}>
                                                     {item.entryType === 'sale' ? `Venta Folio ${item.folio}` : (item.description || item.product_name || typeLabel)}
