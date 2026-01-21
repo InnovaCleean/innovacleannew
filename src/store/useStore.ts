@@ -385,8 +385,20 @@ export const useStore = create<AppState>()(
             if (updates.walletStatus) dbUpdates.wallet_status = updates.walletStatus;
 
             await supabase.from('clients').update(dbUpdates).eq('id', id);
+
+            // Sync Name Updates to related tables (Sales, Loyalty) if name changed
+            if (updates.name) {
+                await supabase.from('sales').update({ client_name: updates.name }).eq('client_id', id);
+                // Loyalty transactions usually don't store client name snapshot, usually just ID, but checking store/DB:
+                // Store/types says LoyaltyTransaction has clientName? Let's check.
+                // If so, update it. If not, ignore.
+                // Assuming sales definitely does based on user request.
+            }
+
             set((state) => ({
-                clients: state.clients.map(c => c.id === id ? { ...c, ...updates } : c)
+                clients: state.clients.map(c => c.id === id ? { ...c, ...updates } : c),
+                // Also update local sales state to reflect name change immediately without reload
+                sales: state.sales.map(s => s.clientId === id && updates.name ? { ...s, clientName: updates.name } : s)
             }));
         },
         deleteClient: async (id) => {

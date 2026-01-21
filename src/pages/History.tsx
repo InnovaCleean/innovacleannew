@@ -313,7 +313,14 @@ export default function History() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                             <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Ventas</p>
-                            <p className="text-lg font-black text-slate-800">{sortedGroupedSales.length}</p>
+                            <p className="text-lg font-black text-slate-800">
+                                {sortedGroupedSales.filter(g => !g.isCancelled).length}
+                                {sortedGroupedSales.some(g => g.isCancelled) && (
+                                    <span className="text-sm text-red-400 ml-1">
+                                        ({sortedGroupedSales.filter(g => g.isCancelled).length} Canceladas)
+                                    </span>
+                                )}
+                            </p>
                         </div>
                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
                             <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Ingreso Total</p>

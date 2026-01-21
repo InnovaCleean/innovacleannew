@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
-import { DollarSign, ArrowUpCircle, ArrowDownCircle, Banknote, Calendar } from 'lucide-react';
+import { Banknote, CreditCard, Wallet, ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency, parseCDMXDate } from '../lib/utils';
 
 type MovementType = 'deposit' | 'withdrawal';
@@ -54,6 +54,22 @@ export default function CashFlow() {
         amount: 0,
         description: ''
     });
+
+    // Sort Config
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (!sortConfig || sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 text-slate-400 ml-1 inline" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-primary-600 ml-1 inline" /> : <ArrowDown className="w-3 h-3 text-primary-600 ml-1 inline" />;
+    };
 
     const handleAddMovement = (e: React.FormEvent) => {
         e.preventDefault();
@@ -148,6 +164,33 @@ export default function CashFlow() {
                 ...filteredExpenses.map(e => ({ entryType: 'expense', ...e })),
                 ...filteredMovements.map(m => ({ entryType: 'movement', ...m }))
             ].sort((a: any, b: any) => {
+                // If sort config exists
+                if (sortConfig) {
+                    let valA = a[sortConfig.key];
+                    let valB = b[sortConfig.key];
+
+                    // Special handling for date
+                    if (sortConfig.key === 'date') {
+                        valA = a.entryType === 'expense' ? parseCDMXDate(a.date).getTime() : new Date(a.date).getTime();
+                        valB = b.entryType === 'expense' ? parseCDMXDate(b.date).getTime() : new Date(b.date).getTime();
+                    }
+
+                    // Special handling for Amount (expense = negative logic for sorting?)
+                    // User probably wants absolute magnitude or actual flow? 
+                    // Usually "Monto" column shows absolute in table, but mathematically it's flow.
+                    // Let's sort by Absolute Magnitude as displayed in table, OR by actual value.
+                    // Let's stick to actual Value.
+                    if (sortConfig.key === 'amount') {
+                        valA = (a.entryType === 'expense' || (a.entryType === 'movement' && a.type === 'withdrawal')) ? -a.amount : a.amount;
+                        valB = (b.entryType === 'expense' || (b.entryType === 'movement' && b.type === 'withdrawal')) ? -b.amount : b.amount;
+                    }
+
+                    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+
+                // Default Sort: Date Desc
                 const dateA = a.entryType === 'expense' ? parseCDMXDate(a.date).getTime() : new Date(a.date).getTime();
                 const dateB = b.entryType === 'expense' ? parseCDMXDate(b.date).getTime() : new Date(b.date).getTime();
                 return dateB - dateA;
@@ -235,10 +278,14 @@ export default function CashFlow() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 text-slate-500">
                                 <tr>
-                                    <th className="px-6 py-3">Fecha</th>
+                                    <th onClick={() => handleSort('date')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
+                                        Fecha <SortIcon columnKey="date" />
+                                    </th>
                                     <th className="px-6 py-3">Concepto</th>
                                     <th className="px-6 py-3">Tipo</th>
-                                    <th className="px-6 py-3 text-right">Monto</th>
+                                    <th onClick={() => handleSort('amount')} className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100 select-none">
+                                        Monto <SortIcon columnKey="amount" />
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -274,7 +321,16 @@ export default function CashFlow() {
 
                                     const isExpense = item.entryType === 'expense';
                                     const displayDate = isExpense
-                                        ? parseCDMXDate(item.date).toLocaleDateString() + ' (Gasto)'
+                                        ? (() => {
+                                            const d = parseCDMXDate(item.date);
+                                            // Set to end of day? Or just 12:00?
+                                            // User requests "Same format".
+                                            // Real sales have "dd/mm/aaaa, hh:mm:ss p.m."
+                                            // We'll fake a time for aesthetic consistency, preferably 00:00:00 or current?
+                                            // "20/1/2026, 00:00:00 a. m."
+                                            d.setHours(0, 0, 0);
+                                            return d.toLocaleString() + ' (Gasto)';
+                                        })()
                                         : new Date(item.date).toLocaleString();
 
                                     return (
