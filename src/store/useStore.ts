@@ -175,7 +175,7 @@ export const useStore = create<AppState>()(
                     sku: p.sku,
                     quantity: Number(p.quantity) || 0,
                     costUnit: Number(p.cost) || 0,
-                    costTotal: Number(p.cost_total) || 0,
+                    costTotal: Number(p.total) || 0,
                     date: p.date,
                     userId: p.user_id,
                     userName: p.user_name,
@@ -340,6 +340,15 @@ export const useStore = create<AppState>()(
 
         // ... clients, users... (kept same)
         addClient: async (client) => {
+            // Check for duplicate phone
+            if (client.phone) {
+                const existing = get().clients.find(c => c.phone === client.phone);
+                if (existing) {
+                    alert(`Error: Ya existe un cliente con el número ${client.phone} (${existing.name})`);
+                    return;
+                }
+            }
+
             const { data } = await supabase.from('clients').insert([{
                 name: client.name,
                 rfc: client.rfc,
@@ -349,9 +358,10 @@ export const useStore = create<AppState>()(
                 city: client.city,
                 state: client.state,
                 email: client.email,
-                phone: client.phone
+                phone: client.phone,
+                wallet_status: 'inactive' // Force inactive to prevent auto-activation
             }]).select().single();
-            if (data) set((state) => ({ clients: [...state.clients, { ...client, id: data.id }] }));
+            if (data) set((state) => ({ clients: [...state.clients, { ...client, id: data.id, walletStatus: 'inactive' }] }));
         },
         updateClient: async (id, updates) => {
             const dbUpdates: any = {};
@@ -717,25 +727,54 @@ export const useStore = create<AppState>()(
                     };
                     const { data: refundData, error: refundError } = await supabase.from('loyalty_transactions').insert([refundTx]).select().single();
                     if (refundData) {
-                        set((state) => ({
-                            loyaltyTransactions: [
-                                {
-                                    id: refundData.id,
-                                    clientId: refundData.client_id,
-                                    saleId: refundData.sale_id,
-                                    amount: Number(refundData.amount),
-                                    points: Number(refundData.points),
-                                    type: refundData.type,
-                                    description: refundData.description,
-                                    date: refundData.created_at,
-                                    created_at: refundData.created_at
-                                },
-                                ...state.loyaltyTransactions
-                            ]
-                        }));
+                        get().addLoyaltyTransaction({
+                            id: refundData.id,
+                            clientId: refundData.client_id,
+                            saleId: refundData.sale_id,
+                            amount: Number(refundData.amount),
+                            points: Number(refundData.points),
+                            type: refundData.type,
+                            description: refundData.description,
+                            date: refundData.created_at,
+                            created_at: refundData.created_at
+                        });
                     } else if (refundError) {
                         console.error('Error refunding wallet:', refundError);
                         alert(`Error al reembolsar al monedero: ${refundError.message}`);
+                    }
+                }
+            }
+
+            // 0.1 Reverse Earned Points (If applicable)
+            if (!firstSale.isCancelled && firstSale.clientId && firstSale.clientId !== 'general') {
+                const settings = get().settings;
+                const percentage = settings.loyaltyPercentage || 0;
+                // Calculate total sale amount to reverse points
+                const totalSaleAmount = folioSales.reduce((sum, s) => sum + s.amount, 0);
+
+                if (percentage > 0 && totalSaleAmount > 0) {
+                    const pointsReversed = totalSaleAmount * (percentage / 100);
+                    const reverseTx = {
+                        client_id: firstSale.clientId,
+                        amount: -pointsReversed, // Deduct the amount added to wallet
+                        points: -pointsReversed, // Deduct points
+                        type: 'adjustment' as const,
+                        description: `Cancelación Puntos Folio ${folio}`,
+                        created_at: new Date().toISOString()
+                    };
+                    const { data: reverseData } = await supabase.from('loyalty_transactions').insert([reverseTx]).select().single();
+                    if (reverseData) {
+                        get().addLoyaltyTransaction({
+                            id: reverseData.id,
+                            clientId: reverseData.client_id,
+                            saleId: reverseData.sale_id,
+                            amount: Number(reverseData.amount),
+                            points: Number(reverseData.points),
+                            type: reverseData.type,
+                            description: reverseData.description,
+                            date: reverseData.created_at,
+                            created_at: reverseData.created_at
+                        });
                     }
                 }
             }
@@ -794,8 +833,8 @@ export const useStore = create<AppState>()(
                 sku: purchase.sku,
                 product_name: purchase.productName,
                 quantity: purchase.quantity,
-                cost: purchase.costUnit,         // CHANGED: Matches 'cost' column from read logic
-                cost_total: purchase.costTotal,
+                cost: purchase.costUnit,
+                total: purchase.costTotal,
                 supplier: purchase.supplier || 'Unknown',
                 date: purchase.date,
                 notes: purchase.notes,

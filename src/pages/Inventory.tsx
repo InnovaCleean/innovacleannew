@@ -122,7 +122,15 @@ export default function Inventory() {
     const handleExport = () => {
         // Robust CSV Export with BOM for Excel
         const headers = ['SKU', 'Nombre', 'Categoria', 'Unidad', 'Stock', 'Costo', 'Precio Menudeo', 'Precio Medio', 'Precio Mayoreo', 'Valor Inventario'];
-        const rows = products.map(p => [
+
+        // Sort by SKU before exporting
+        const sortedForExport = [...products].sort((a, b) => {
+            const skuA = parseInt(a.sku.replace(/\D/g, '')) || 0;
+            const skuB = parseInt(b.sku.replace(/\D/g, '')) || 0;
+            return skuA - skuB;
+        });
+
+        const rows = sortedForExport.map(p => [
             p.sku,
             p.name,
             p.category,
@@ -185,7 +193,7 @@ export default function Inventory() {
                                             className="flex items-center gap-2 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs font-bold shadow-sm"
                                         >
                                             <Plus className="w-3.5 h-3.5" />
-                                            + Nuevo Producto
+                                            Nuevo Producto
                                         </button>
                                         <button
                                             onClick={handleExport}
@@ -198,13 +206,13 @@ export default function Inventory() {
                                 )}
                                 {isAdmin && (
                                     <>
-                                        {/* <button
+                                        <button
                                             onClick={downloadProductTemplate}
                                             className="flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-xs font-bold"
                                         >
                                             <Download className="w-3.5 h-3.5" />
                                             PLANTILLA
-                                        </button> */}
+                                        </button>
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
                                             className="flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors text-xs font-bold border border-primary-100"

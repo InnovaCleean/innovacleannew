@@ -975,7 +975,7 @@ export default function Sales() {
                                             <td className="px-6 py-4 text-slate-600">
                                                 {group.clientName}
                                             </td>
-                                            <td className={`px-6 py-4 font-bold ${amountColor(group.amount)}`}>
+                                            <td className={`px-6 py-4 font-bold ${amountColor(group.amount)} ${group.isCancelled ? 'line-through text-red-500' : ''}`}>
                                                 {formatCurrency(group.amount)}
                                             </td>
                                             <td className="px-6 py-4 text-slate-600 text-xs uppercase font-bold">

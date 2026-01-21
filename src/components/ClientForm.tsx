@@ -6,9 +6,12 @@ interface ClientFormProps {
     initialData?: Client | null;
     onSubmit: (data: Omit<Client, 'id'>) => void;
     onCancel: () => void;
+    existingClients?: Client[];
 }
 
-export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel }) => {
+export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel, existingClients = [] }) => {
+    const [nameSuggestions, setNameSuggestions] = useState<Client[]>([]);
+    const [phoneDuplicate, setPhoneDuplicate] = useState<Client | null>(null);
     const [formData, setFormData] = useState<Omit<Client, 'id'>>({
         name: '',
         rfc: '',
@@ -129,11 +132,36 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         // Phone Mask
         if (field === 'phone') {
             finalValue = formatPhone(value);
+
+            // Check for duplicate phone
+            const cleanPhone = finalValue.replace(/\D/g, '');
+            if (cleanPhone.length >= 10 && existingClients) {
+                const dup = existingClients.find(c =>
+                    c.id !== initialData?.id &&
+                    c.phone?.replace(/\D/g, '') === cleanPhone
+                );
+                setPhoneDuplicate(dup || null);
+            } else {
+                setPhoneDuplicate(null);
+            }
         } else {
             // Uppercase enforcement for specific fields
             const upperFields = ['name', 'address', 'colonia', 'city', 'state', 'rfc'];
             if (upperFields.includes(field)) {
                 finalValue = value.toUpperCase();
+            }
+        }
+
+        // Name suggestions logic
+        if (field === 'name') {
+            if (finalValue.length > 2 && existingClients) {
+                const matches = existingClients.filter(c =>
+                    c.id !== initialData?.id &&
+                    c.name.toLowerCase().includes(finalValue.toLowerCase())
+                ).slice(0, 5); // Limit to 5
+                setNameSuggestions(matches);
+            } else {
+                setNameSuggestions([]);
             }
         }
 
@@ -171,6 +199,16 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 uppercase"
                         placeholder="NOMBRE COMPLETO"
                     />
+                    {nameSuggestions.length > 0 && (
+                        <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-xs font-bold text-yellow-700 mb-1">Posibles duplicados encontrados:</p>
+                            <ul className="text-xs text-yellow-800 space-y-1">
+                                {nameSuggestions.map(c => (
+                                    <li key={c.id}>• {c.name} ({c.phone || 'Sin teléfono'})</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
                 <div>
@@ -194,6 +232,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         placeholder="(###) ###-####"
                         maxLength={14}
                     />
+                    <p className="mt-1 text-xs text-slate-500">
+                        * Es necesario un número de teléfono para activar el monedero electrónico y generar puntos.
+                    </p>
+                    {phoneDuplicate && (
+                        <div className="mt-1 text-xs font-bold text-red-600 bg-red-50 p-2 rounded-md border border-red-100">
+                            ⚠ Este teléfono ya está registrado con: {phoneDuplicate.name}
+                        </div>
+                    )}
                 </div>
 
                 <div className="md:col-span-2">

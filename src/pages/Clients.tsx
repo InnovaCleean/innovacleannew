@@ -163,6 +163,7 @@ export default function Clients() {
                                 initialData={editingClient}
                                 onSubmit={handleSubmit}
                                 onCancel={() => setIsModalOpen(false)}
+                                existingClients={clients}
                             />
                         </div>
                     </div>
