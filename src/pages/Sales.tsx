@@ -1204,18 +1204,20 @@ export default function Sales() {
                                 </div>
                                 <button
                                     onClick={() => setIsDetailModalOpen(false)}
-                                    className="px-4 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 font-medium"
+                                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 font-medium md:px-4 md:py-2"
+                                    title="Cerrar"
                                 >
-                                    Cerrar
+                                    <span className="hidden md:inline">Cerrar</span>
+                                    <span className="md:hidden">X</span>
                                 </button>
                                 {isAdmin && !activeFolioData.isCancelled && (
                                     <button
                                         onClick={() => handleCancelFolio(activeFolioData.folio)}
-                                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg shadow-red-500/30 flex items-center gap-2"
+                                        className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg shadow-red-500/30 flex items-center gap-2 md:px-4 md:py-2"
+                                        title="Cancelar Venta"
                                     >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Cancelar Venta</span>
-                                        <span className="sm:hidden">Cancelar</span>
+                                        <Trash2 className="w-5 h-5" />
+                                        <span className="hidden md:inline">Cancelar Venta</span>
                                     </button>
                                 )}
                             </div>

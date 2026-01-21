@@ -180,7 +180,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             ...formData,
             rfc: formData.rfc.trim() || 'XAXX010101000',
             name: formData.name.trim() || 'PÚBLICO GENERAL',
-            address: formData.address.trim() || 'CIUDAD',
+            address: formData.address.trim(),
         };
 
         onSubmit(submissionData);

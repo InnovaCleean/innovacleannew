@@ -244,17 +244,20 @@ export default function CashFlow() {
                                     let color = '';
 
                                     if (item.entryType === 'sale') {
-                                        typeLabel = `Venta ${item.folio}`;
+                                        const methodMap: any = {
+                                            'cash': 'Efectivo',
+                                            'card_credit': 'Tarjeta Crédito',
+                                            'card_debit': 'Tarjeta Débito',
+                                            'transfer': 'Transferencia',
+                                            'wallet': 'Monedero',
+                                            'multiple': 'Múltiple'
+                                        };
+                                        typeLabel = methodMap[item.paymentMethod] || item.paymentMethod;
                                         amount = item.amount;
                                         color = 'text-emerald-600';
                                         if (item.isCancelled) {
                                             color = 'text-red-400 line-through';
                                         }
-                                        // Show specifically what part was cash? 
-                                        // For simplicity showing total sale, but maybe confusing for cash flow.
-                                        // User asked report by payment method.
-                                        // If sale was card, it shouldn't affect "Cash Box".
-                                        // Let's annotate method.
                                     } else if (item.entryType === 'expense') {
                                         typeLabel = 'Gasto';
                                         amount = -item.amount;
@@ -270,11 +273,11 @@ export default function CashFlow() {
                                             <td className="px-6 py-3 text-slate-500">{new Date(item.date).toLocaleString()}</td>
                                             <td className="px-6 py-3">
                                                 <div className={`font-medium text-slate-800 ${item.isCancelled ? 'line-through text-red-500' : ''}`}>
-                                                    {item.description || item.product_name || typeLabel}
-                                                    {item.isCancelled && <span className="ml-2 text-xs text-red-600 font-bold">(CANCELADO)</span>}
+                                                    {item.entryType === 'sale' ? `Venta Folio ${item.folio}` : (item.description || item.product_name || typeLabel)}
+                                                    {item.isCancelled && <span className="ml-2 text-xs text-red-600 font-bold bg-red-100 px-1 rounded">(CANCELADO)</span>}
                                                 </div>
                                                 <div className="text-xs text-slate-400">
-                                                    {item.entryType === 'sale' && (item.paymentMethod === 'multiple' ? 'Múltiple' : item.paymentMethod)}
+                                                    {item.entryType === 'sale' && (item.product_name)}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-3 capitalize text-slate-500">{typeLabel}</td>

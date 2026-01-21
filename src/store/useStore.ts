@@ -430,7 +430,7 @@ export const useStore = create<AppState>()(
                 amount: expense.amount,
                 type: expense.type,
                 category: expense.category,
-                user_id: (expense.userId && expense.userId !== 'general' && expense.userId.length > 10) ? expense.userId : null,
+                user_id: null, // Force NULL to avoid FK constraint issues with local users
                 // user_name is optional if we join, but let's store it for snapshot
                 user_name: expense.userName,
                 date: expense.date

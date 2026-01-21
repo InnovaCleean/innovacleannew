@@ -103,6 +103,29 @@ export default function Inventory() {
         }
     };
 
+    // Category Suggestions Logic
+    const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+
+    const uniqueCategories = useMemo(() => {
+        const cats = products.map(p => p.category).filter(Boolean);
+        return Array.from(new Set(cats)).sort();
+    }, [products]);
+
+    const handleCategoryChange = (val: string) => {
+        if (!editingProduct) return;
+        setEditingProduct({ ...editingProduct, category: val.toUpperCase() });
+
+        if (val.length > 0) {
+            const matches = uniqueCategories.filter(c =>
+                c.toUpperCase().includes(val.toUpperCase()) &&
+                c.toUpperCase() !== val.toUpperCase()
+            ).slice(0, 5);
+            setCategorySuggestions(matches);
+        } else {
+            setCategorySuggestions([]);
+        }
+    };
+
     const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -354,13 +377,38 @@ export default function Inventory() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-semibold text-slate-500 uppercase">Categoría</label>
-                                        <input
-                                            type="text"
-                                            value={editingProduct.category}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                                            className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500"
-                                            required
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={editingProduct.category}
+                                                onChange={(e) => handleCategoryChange(e.target.value)}
+                                                onFocus={() => {
+                                                    if (editingProduct.category) handleCategoryChange(editingProduct.category);
+                                                }}
+                                                onBlur={() => setTimeout(() => setCategorySuggestions([]), 200)}
+                                                className="w-full px-4 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 uppercase"
+                                                required
+                                                placeholder="EJ. LIMPIEZA"
+                                                autoComplete="off"
+                                            />
+                                            {categorySuggestions.length > 0 && (
+                                                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                                    {categorySuggestions.map(cat => (
+                                                        <button
+                                                            key={cat}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditingProduct({ ...editingProduct, category: cat });
+                                                                setCategorySuggestions([]);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm uppercas transition-colors"
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-semibold text-slate-500 uppercase">Unidad de Medida</label>
