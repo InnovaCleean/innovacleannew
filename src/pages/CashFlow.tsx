@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { Banknote, ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { formatCurrency, parseCDMXDate } from '../lib/utils';
+import { formatCurrency, parseCDMXDate, formatDate } from '../lib/utils';
 
 type MovementType = 'deposit' | 'withdrawal';
 
@@ -354,19 +354,9 @@ export default function CashFlow() {
                                     }
 
                                     const displayDate = (() => {
-                                        // Try to parse as full date first
-                                        try {
-                                            const d = parseCDMXDate(item.date);
-                                            // Ensure we display time if it exists (not midnight)
-                                            // If it is midnight (older expenses), format might hide it, but user wants consistency.
-                                            // "20/1/2026, 12:00:00 p.m."
-                                            return d.toLocaleString('es-MX', {
-                                                year: 'numeric', month: 'numeric', day: 'numeric',
-                                                hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true, timeZone: 'America/Mexico_City'
-                                            });
-                                        } catch (e) {
-                                            return item.date;
-                                        }
+                                        // Use common formatter for all types to ensure "21 de enero de 2026, 02:47 a.m." format matches Sales History
+                                        const dateToFormat = item.entryType === 'expense' ? (item.created_at || item.date) : item.date;
+                                        return formatDate(dateToFormat);
                                     })();
 
                                     return (

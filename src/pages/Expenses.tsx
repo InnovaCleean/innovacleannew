@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { Plus, Trash2, X, DollarSign, Tag, User } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, formatDate } from '../lib/utils';
 import { Expense } from '../types';
 
 export default function Expenses() {
@@ -124,15 +124,7 @@ export default function Expenses() {
                                 expenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3 text-slate-500 font-mono text-xs">
-                                            {new Date(expense.created_at || expense.date).toLocaleString('es-MX', {
-                                                year: 'numeric',
-                                                month: '2-digit',
-                                                day: '2-digit',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                hour12: true,
-                                                timeZone: 'America/Mexico_City'
-                                            })}
+                                            {formatDate(expense.created_at || expense.date)}
                                         </td>
                                         <td className="px-6 py-3 font-medium text-slate-900">
                                             {expense.description}
