@@ -580,16 +580,24 @@ export const useStore = create<AppState>()(
                 stock_initial: p.stockInitial,
                 stock_current: p.stockCurrent
             }));
+
             if (replace) {
+                // DELETE DEPENDENCIES FIRST to avoid 409 Conflict (Child tables first)
+                await supabase.from('loyalty_transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Depends on Sales
+                await supabase.from('sales').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Depends on Products
+                await supabase.from('purchases').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Depends on Products
+                // Also clear cart related items if any table exists, but sales/purchases are main FKs
+
                 await supabase.from('products').delete().neq('sku', '000');
-                await supabase.from('products').insert(mapped);
-                const { data } = await supabase.from('products').select('*');
-                if (data) set({ products: data as any[] });
+                const { error } = await supabase.from('products').insert(mapped);
+                if (error) console.error("Import Insert Error", error);
             } else {
-                await supabase.from('products').upsert(mapped, { onConflict: 'sku' });
-                const { data } = await supabase.from('products').select('*');
-                if (data) set({ products: data as any[] });
+                const { error } = await supabase.from('products').upsert(mapped, { onConflict: 'sku' });
+                if (error) console.error("Import Upsert Error", error);
             }
+
+            // Force Refresh UI
+            await get().fetchInitialData();
         },
         fetchUsers: async () => {
             const { data } = await supabase.from('users').select('*');

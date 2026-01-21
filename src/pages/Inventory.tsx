@@ -135,7 +135,16 @@ export default function Inventory() {
 
             // Preview First Product
             const sample = products[0];
-            const previewMsg = `Vista Previa del Primer Producto:\n\nSKU: ${sample.sku}\nNombre: ${sample.name}\nStock: ${sample.stockCurrent}\nPrecio: ${formatCurrency(sample.priceRetail || 0)}\n\n¿Los datos se ven correctos?\n(Si ves ceros o nombres vacíos, cancela y revisa tu Excel)`;
+            const previewMsg = `REVISIÓN DETALLADA (Primer Producto):\n` +
+                `SKU: ${sample.sku}\n` +
+                `Nombre: ${sample.name}\n` +
+                `Categoría: ${sample.category}\n` +
+                `Stock: ${sample.stockCurrent ?? 'VACÍO'}\n` +
+                `Costo: ${formatCurrency(sample.cost || 0)}\n` +
+                `P. Menudeo: ${formatCurrency(sample.priceRetail || 0)}\n` +
+                `P. Medio: ${formatCurrency(sample.priceMedium || 0)}\n` +
+                `P. Mayoreo: ${formatCurrency(sample.priceWholesale || 0)}\n\n` +
+                `Verifica que NO haya ceros donde no debe. Si ves $0.00, CANCELA y revisa tu Excel.`;
 
             if (!confirm(previewMsg)) {
                 e.target.value = '';
