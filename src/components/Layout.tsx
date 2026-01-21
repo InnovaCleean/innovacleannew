@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import {
@@ -28,7 +28,23 @@ export function Layout({ children }: LayoutProps) {
     const user = useStore((state) => state.user);
     const logout = useStore((state) => state.logout);
     const settings = useStore((state) => state.settings);
+    const updateUserActivity = useStore((state) => state.updateUserActivity);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Heartbeat for "Online" status
+    useEffect(() => {
+        if (!user) return;
+
+        // Initial "I am here"
+        updateUserActivity('Navegando: ' + location.pathname);
+
+        // Heartbeat every 2 minutes
+        const interval = setInterval(() => {
+            updateUserActivity('Activo (Heartbeat)');
+        }, 120000); // 2 minutes
+
+        return () => clearInterval(interval);
+    }, [user, location.pathname, updateUserActivity]);
 
     const links = [
         { name: 'Ventas', href: '/sales', icon: ShoppingCart, roles: ['admin', 'seller'] },

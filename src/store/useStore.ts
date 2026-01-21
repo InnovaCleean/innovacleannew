@@ -91,6 +91,7 @@ export const useStore = create<AppState>()(
             }
         },
 
+
         fetchInitialData: async () => {
             if (!import.meta.env.VITE_SUPABASE_URL) return;
 
@@ -273,19 +274,26 @@ export const useStore = create<AppState>()(
             const { data } = await supabase.from('users').select('*').eq('username', user.username).eq('password', user.password).single();
             if (data) {
                 const NOW = getCDMXISOString();
+                const userWithActivity = { ...data as User, lastActive: NOW, lastAction: 'Inicio de Sesión' };
+                // Persist user
+                localStorage.setItem('app-user', JSON.stringify(userWithActivity));
+
                 // Update user activity on login
                 set((state) => {
                     const updatedUsers = state.users.map(u =>
                         u.id === data.id ? { ...u, lastActive: NOW, lastAction: 'Inicio de Sesión' } : u
                     );
                     return {
-                        user: { ...data as User, lastActive: NOW, lastAction: 'Inicio de Sesión' },
+                        user: userWithActivity,
                         users: updatedUsers
                     };
                 });
             }
         },
-        logout: () => set({ user: null }),
+        logout: () => {
+            localStorage.removeItem('app-user');
+            set({ user: null });
+        },
         setTheme: async (themeId) => {
             set((state) => {
                 const newSettings = { ...state.settings, themeId };

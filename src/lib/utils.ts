@@ -5,11 +5,13 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export const formatCurrency = (amount: number) => {
+export const formatCurrency = (amount: number | string | undefined | null) => {
+    const val = Number(amount);
+    if (isNaN(val)) return '$0.00';
     return new Intl.NumberFormat('es-MX', {
         style: 'currency',
         currency: 'MXN',
-    }).format(amount);
+    }).format(val);
 };
 
 export const getCDMXISOString = (): string => {
