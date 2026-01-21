@@ -124,7 +124,7 @@ export default function Expenses() {
                                 expenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-3 text-slate-500 font-mono text-xs">
-                                            {formatDate(expense.created_at || expense.date)}
+                                            {formatDate(expense.date)}
                                         </td>
                                         <td className="px-6 py-3 font-medium text-slate-900">
                                             {expense.description}
@@ -147,7 +147,7 @@ export default function Expenses() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-3 text-right font-bold text-slate-700">
-                                            - {formatCurrency(expense.amount)}
+                                            {formatCurrency(expense.amount)}
                                         </td>
                                         {(user.role === 'admin') && (
                                             <td className="px-6 py-3 text-center">
