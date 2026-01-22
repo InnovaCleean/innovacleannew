@@ -189,67 +189,33 @@ export default function Roles() {
                                 </div>
                                 <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 pr-2">
                                     {role.permissions.includes('*') ? (
-                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium flex items-center gap-1">
+                                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-bold flex items-center gap-1 w-full justify-center">
                                             <Shield className="w-3 h-3" /> Acceso Total
                                         </span>
                                     ) : (
-                                        role.permissions.map(p => {
-                                            // Helper to find label
-                                            let label: string = p;
-                                            for (const g of PERMISSION_GROUPS) {
-                                                const found = g.permissions.find(perm => perm.id === p);
-                                                if (found) {
-                                                    // Transform "Crear Ventas" (Actions) + Group Label (Page) -> "[Ventas - Crear]"
-                                                    // Simplify for UI: Use a predefined mapping or construct it.
-                                                    // Constructing: "[Group - Action]"
-                                                    // E.g. Group "Ventas", Action "Crear Ventas" -> [Ventas - Crear Ventas]
-
-                                                    // Let's make it cleaner as requested: [Ventas - Crear]
-                                                    // We can strip common words or just use the Action label if it's descriptive enough, 
-                                                    // but user asked for [Page - Action].
-                                                    // Let's use the Group Label as "Page" and try to clean the Action label
-
-                                                    const page = g.label.split(' / ')[0]; // "Inventario / Productos" -> "Inventario"
-                                                    let action = found.label;
-
-                                                    // Manual cleanups for brevity
-                                                    action = action.replace('Crear ', '').replace('Ver ', '').replace('Gestionar ', '').replace(' (Super Admin)', '').replace(' (Crear/Editar/Eliminar)', '');
-                                                    if (action === 'Historial') action = 'Leer';
-                                                    if (action === 'Configuración General') action = 'Editar';
-                                                    if (action === 'Acceso Total') action = 'Total';
-
-                                                    // Re-map verbs if needed, or just use the cleaned noun?
-                                                    // User example: [Ventas - Leer]
-                                                    // My action for sales:read is "Ver Historial" -> "Historial" -> maybe "Leer"?
-                                                    // Let's just Map ID to exact string user wants for best results.
-
-                                                    const ID_TO_LABEL: Record<string, string> = {
-                                                        'sales:create': 'Crear',
-                                                        'sales:read': 'Leer',
-                                                        'sales:cancel': 'Cancelar',
-                                                        'products:read': 'Leer',
-                                                        'products:manage': 'Crear/Editar',
-                                                        'clients:read': 'Leer',
-                                                        'clients:manage': 'Crear/Editar',
-                                                        'users:manage': 'Gestionar',
-                                                        'reports:view': 'Leer',
-                                                        'cashflow:view': 'Leer',
-                                                        'expenses:manage': 'Gestionar',
-                                                        'settings:manage': 'Editar',
-                                                        '*': 'Total'
-                                                    };
-
-                                                    action = ID_TO_LABEL[p as string] || action;
-                                                    label = `[${page} - ${action}]`;
+                                        <div className="flex flex-col gap-1 w-full">
+                                            {role.permissions.map(p => {
+                                                // Find the label from the groups
+                                                let label: string = p;
+                                                for (const g of PERMISSION_GROUPS) {
+                                                    const found = g.permissions.find(perm => perm.id === p);
+                                                    if (found) {
+                                                        label = found.label; // Use the original form label e.g., "Crear Ventas"
+                                                        break;
+                                                    }
                                                 }
-                                            }
 
-                                            return (
-                                                <span key={p} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs border border-slate-200 font-mono">
-                                                    {label}
-                                                </span>
-                                            );
-                                        })
+                                                return (
+                                                    <div key={p} className="flex items-center gap-1.5 text-xs text-slate-600">
+                                                        {/* Simple Check Icon SVG inline for reliability or Lucide Check */}
+                                                        <svg className="w-3.5 h-3.5 text-primary-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span>{label}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     )}
                                 </div>
                             </div>

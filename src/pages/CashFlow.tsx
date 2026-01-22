@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency, parseCDMXDate, formatDate } from '../lib/utils';
-import billeteAxolote from '../assets/img/billete_50_axolote.png';
+import billeteAxolote from '../assets/img/billete_50_axolote.jpg';
 
 type MovementType = 'deposit' | 'withdrawal';
 
@@ -284,7 +284,7 @@ export default function CashFlow() {
                             </div>
                             {/* Primary Icon */}
                             <div className="relative z-10">
-                                <img src={billeteAxolote} alt="Efectivo" className="w-16 h-auto object-contain drop-shadow-sm filter hover:brightness-110 transition-all" />
+                                <img src={billeteAxolote} alt="Efectivo" className="w-20 h-auto object-contain drop-shadow-md rounded-lg transform hover:scale-105 transition-transform" />
                             </div>
                         </div>
 
