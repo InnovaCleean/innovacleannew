@@ -559,8 +559,8 @@ export default function Sales() {
             estimatedHeight += 8;
         }
 
-        // Buffer
-        estimatedHeight += 5;
+        // Buffer for footer spacing
+        estimatedHeight += 10;
 
         const doc = new jsPDF({
             orientation: 'portrait',
@@ -689,8 +689,8 @@ export default function Sales() {
                 y += 4;
             });
         } else {
-            // Single Line format for non-mixed payments, NO amount shown
-            doc.text(`MÉTODO DE PAGO: ${methodMap[method] || method}`, 5, y);
+            // Single Line format for non-mixed payments, NO amount shown, CENTERED
+            doc.text(`MÉTODO DE PAGO: ${methodMap[method] || method}`, centerX, y, { align: 'center' });
             y += 4;
         }
 
