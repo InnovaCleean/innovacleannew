@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Lock } from 'lucide-react';
+import { getFirstAllowedRoute } from '../lib/auth';
 
 export default function Login() {
     const [username, setUsername] = useState('');
@@ -22,11 +23,8 @@ export default function Login() {
             const currentUser = useStore.getState().user; // Get fresh state after login
 
             if (currentUser) {
-                if (currentUser.role === 'admin') {
-                    navigate('/dashboard');
-                } else {
-                    navigate('/sales');
-                }
+                const targetPath = getFirstAllowedRoute(currentUser);
+                navigate(targetPath);
             } else {
                 setError('Credenciales incorrectas');
             }
