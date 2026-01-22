@@ -518,10 +518,46 @@ export default function Sales() {
 
     const handleGeneratePDFTicket = () => {
         if (!activeFolioData) return;
+
+        // 1. Calculate Estimated Height
+        let estimatedHeight = 100; // Base: Header (40) + Info (30) + Totals (10) + Footer (20)
+
+        // Items Estimation
+        activeFolioData.items.forEach(item => {
+            const p = products.find(prod => prod.sku === item.sku);
+            const name = (p?.name || item.sku);
+            // Approx 30 chars per line in 40mm width with font size 7
+            const lines = Math.ceil(name.length / 25);
+            estimatedHeight += (lines * 3) + 2;
+        });
+
+        // Payment Section Estimation
+        // Header (4) + Lines (4 each)
+        estimatedHeight += 4;
+        const isMultiple = activeFolioData.items[0]?.paymentMethod === 'multiple';
+        if (isMultiple && activeFolioData.items[0]?.paymentDetails) {
+            estimatedHeight += Object.keys(activeFolioData.items[0].paymentDetails).length * 4;
+        } else {
+            estimatedHeight += 4;
+        }
+
+        // Wallet Section Estimation
+        if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
+            estimatedHeight += 30;
+        }
+
+        // Cancelled Watermark Extra
+        if (activeFolioData.isCancelled) {
+            estimatedHeight += 10;
+        }
+
+        // Buffer
+        estimatedHeight += 10;
+
         const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: [80, 200] // Small Receipt Format approx
+            format: [80, estimatedHeight]
         });
 
         const startY = 10;
@@ -623,9 +659,12 @@ export default function Sales() {
         doc.text(`TOTAL: ${formatCurrency(activeFolioData.amount)}`, 75, y, { align: 'right' });
         y += 6;
 
-        // Payment Method
+        // Payment Method - Consolidated List Logic
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
+        doc.text('MÉTODO DE PAGO:', 5, y);
+        y += 4;
+
         const method = activeFolioData.items[0]?.paymentMethod || activeFolioData.paymentMethod || 'cash';
         const methodMap: Record<string, string> = {
             'cash': 'EFECTIVO',
@@ -637,17 +676,17 @@ export default function Sales() {
         };
 
         if (method === 'multiple' && activeFolioData.items[0]?.paymentDetails) {
-            doc.text('PAGO MIXTO:', 5, y);
-            y += 4;
             Object.entries(activeFolioData.items[0].paymentDetails).forEach(([m, amt]) => {
                 doc.text(`- ${methodMap[m] || m}: ${formatCurrency(amt as number)}`, 5, y);
                 y += 4;
             });
         } else {
-            doc.text(`MÉTODO DE PAGO: ${methodMap[method] || method}`, 5, y);
+            // Single payment method
+            doc.text(`- ${methodMap[method] || method}: ${formatCurrency(activeFolioData.amount)}`, 5, y);
+            y += 4;
         }
 
-        y += 8;
+        y += 6;
 
         // Wallet Info in PDF
         if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
@@ -675,7 +714,11 @@ export default function Sales() {
                     doc.text('Estado: INACTIVO', centerX, y, { align: 'center' }); y += 3;
                 }
             } else {
-                doc.text(`Puntos Ganados: $${formatCurrency(pointsEarned).replace('$', '')}`, centerX, y, { align: 'center' });
+                if (activeFolioData.isCancelled) {
+                    doc.text(`Puntos NO obtenidos: $${formatCurrency(pointsEarned).replace('$', '')}`, centerX, y, { align: 'center' });
+                } else {
+                    doc.text(`Puntos Ganados: $${formatCurrency(pointsEarned).replace('$', '')}`, centerX, y, { align: 'center' });
+                }
                 y += 3;
             }
 
