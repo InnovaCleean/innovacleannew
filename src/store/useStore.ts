@@ -244,6 +244,7 @@ export const useStore = create<AppState>()(
                             ? JSON.parse(settingsData.price_thresholds)
                             : settingsData.price_thresholds || { medium: 5, wholesale: 10 },
                         loyaltyPercentage: Number(settingsData.loyalty_percentage) || 0,
+                        ticketFooterMessage: settingsData.ticket_footer_message || '¡Gracias por su preferencia!',
                         ...settingsData
                     }
                 });
@@ -265,6 +266,7 @@ export const useStore = create<AppState>()(
                         ? JSON.parse(settingsData.price_thresholds)
                         : settingsData.price_thresholds || { medium: 5, wholesale: 10 },
                     loyaltyPercentage: Number(settingsData.loyalty_percentage) || 0,
+                    ticketFooterMessage: settingsData.ticket_footer_message || '¡Gracias por su preferencia!',
                     ...settingsData
                 }));
             } else {
@@ -350,6 +352,7 @@ export const useStore = create<AppState>()(
                 dbUpdates.price_thresholds = JSON.stringify(updates.priceThresholds);
             }
             if (updates.loyaltyPercentage !== undefined) dbUpdates.loyalty_percentage = updates.loyaltyPercentage;
+            if (updates.ticketFooterMessage !== undefined) dbUpdates.ticket_footer_message = updates.ticketFooterMessage;
 
             if (data && Object.keys(dbUpdates).length > 0) await supabase.from('settings').update(dbUpdates).eq('id', data.id);
         },

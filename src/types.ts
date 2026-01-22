@@ -136,6 +136,7 @@ export interface Settings {
         wholesale: number;
     };
     loyaltyPercentage?: number;
+    ticketFooterMessage?: string;
     razonSocial?: string;
     masterPin?: string;
 }

@@ -55,8 +55,10 @@ export default function Expenses() {
             // Use current ISO string
             finalDateStr = nowLocal.toISOString();
         } else {
-            // Force mid-day local to prevent rolling offset issues
-            finalDateStr = `${newExpense.date}T12:00:00`;
+            // Force mid-day local to prevent rolling offset issues, then convert to ISO UTC
+            // This ensures Postgres receives a standard ISO string
+            const midDay = new Date(`${newExpense.date}T12:00:00`);
+            finalDateStr = midDay.toISOString();
         }
 
         await addExpense({

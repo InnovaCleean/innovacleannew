@@ -362,6 +362,47 @@ export default function Sales() {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
+        // Prepare Wallet Info Lines
+        const client = clients.find(c => c.id === activeFolioData.clientId);
+        let walletInfoHtml = '';
+
+        if (!client || !client.name) {
+            // Caso 1: Public General (No wallet usually, or not registered)
+            walletInfoHtml = `
+                <div class="wallet-section">
+                    <p class="wallet-title">*** MONEDERO ELECTRÓNICO ***</p>
+                    <p>¡Acumula puntos en tus compras!</p>
+                    <p>Solicita tu monedero con tu número</p>
+                    <p>de celular al cajero.</p>
+                </div>
+            `;
+        } else {
+            // Registered Client
+            const currentWalletBalance = loyaltyTransactions
+                .filter(t => t.clientId === activeFolioData.clientId)
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            if (!client.walletStatus || client.walletStatus === 'inactive' || client.walletStatus === 'pending') {
+                walletInfoHtml = `
+                    <div class="wallet-section">
+                        <p class="wallet-title">*** MONEDERO ELECTRÓNICO ***</p>
+                        <p>Estado: <strong>${client.walletStatus === 'pending' ? 'PENDIENTE' : 'INACTIVO'}</strong></p>
+                        <p>Saldo acumulado: <strong>${formatCurrency(currentWalletBalance)}</strong></p>
+                        <p>¡Solicita tu activación para usarlo!</p>
+                    </div>
+                 `;
+            } else {
+                // CASE 3: Active
+                walletInfoHtml = `
+                    <div class="wallet-section">
+                        <p class="wallet-title">*** MONEDERO ELECTRÓNICO ***</p>
+                        <p>Saldo Actual: <strong>${formatCurrency(currentWalletBalance)}</strong></p>
+                        <p>¡No olvides utilizarlo regularmente!</p>
+                    </div>
+                 `;
+            }
+        }
+
         const itemsHtml = activeFolioData.items.map(item => `
             <tr>
                 <td>${item.quantity}</td>
@@ -377,18 +418,41 @@ export default function Sales() {
                 <style>
                     body { font-family: monospace; font-size: 12px; max-width: 300px; margin: 0 auto; color: black; }
                     .header { text-align: center; margin-bottom: 10px; }
-                    .header h1 { margin: 0; font-size: 16px; }
+                    .header h1 { margin: 0; font-size: 16px; font-weight: bold; }
+                    .header p { margin: 2px 0; font-size: 10px; }
+                    
+                    /* Centering Helpers */
+                    .center { text-align: center; }
+                    
                     table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
                     th, td { text-align: left; padding: 2px 0; }
-                    .total { text-align: right; font-weight: bold; font-size: 14px; margin-top: 5px; border-top: 1px dashed black; pt-2; }
+                    th { border-bottom: 1px dashed black; }
+                    
+                    .total { text-align: right; font-weight: bold; font-size: 14px; margin-top: 5px; border-top: 1px dashed black; padding-top: 5px; }
+                    
+                    .wallet-section { margin-top: 15px; text-align: center; font-size: 10px; border-top: 1px dotted #ccc; padding-top: 5px; }
+                    .wallet-title { font-weight: bold; margin-bottom: 2px; }
+                    
                     .footer { text-align: center; margin-top: 20px; font-size: 10px; }
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <h1>${settings.companyName}</h1>
-                    <p>Folio: ${activeFolioData.folio}<br>${formatDate(activeFolioData.date)}</p>
+                    <h1>${settings.companyName.toUpperCase()}</h1>
+                    ${settings.address ? `<p>${settings.address}</p>` : ''}
+                    ${settings.city || settings.state ? `<p>${settings.city}, ${settings.state}</p>` : ''}
+                    ${settings.phone ? `<p>Tel: ${settings.phone}</p>` : ''}
+                    <p style="margin-top: 5px;">----------------------------------------</p>
                 </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <p><strong>FOLIO: ${activeFolioData.folio}</strong></p>
+                    <p>Fecha: ${formatDate(activeFolioData.date)}</p>
+                    <p>Cliente: <strong>${activeFolioData.clientId === 'general' ? 'PÚBLICO GENERAL' : activeFolioData.clientName}</strong></p>
+                </div>
+
+                <p style="text-align: center; margin: 5px 0;">----------------------------------------</p>
+
                 <table>
                     <thead><tr><th>Cant</th><th>Prod</th><th>P.U</th><th>Total</th></tr></thead>
                     <tbody>${itemsHtml}</tbody>
@@ -396,8 +460,11 @@ export default function Sales() {
                 <div class="total">
                     TOTAL: ${formatCurrency(activeFolioData.amount)}
                 </div>
+                
+                ${walletInfoHtml}
+
                 <div class="footer">
-                    <p>¡Gracias por su preferencia!</p>
+                    <p>${(settings.ticketFooterMessage || '¡GRACIAS POR SU PREFERENCIA!').toUpperCase()}</p>
                 </div>
                 <script>
                     window.onload = function() { window.print(); window.close(); }
@@ -444,15 +511,16 @@ export default function Sales() {
         doc.setFont('helvetica', 'normal');
         if (settings.address) {
             doc.text(settings.address, centerX, y, { align: 'center', maxWidth: 70 });
-            y += 4 + (settings.address.length > 30 ? 4 : 0);
+            y += 4;
         }
-        if (settings.phone) {
-            doc.text(`Tel: ${settings.phone}`, centerX, y, { align: 'center' });
+        if (settings.city || settings.state) {
+            doc.text(`${settings.city || ''}, ${settings.state || ''}`, centerX, y, { align: 'center' });
             y += 4;
         }
         y += 2;
         doc.text('------------------------------------------------', centerX, y, { align: 'center' });
         y += 4;
+
 
         // Info
         doc.setFont('helvetica', 'bold');
@@ -521,8 +589,23 @@ export default function Sales() {
         }
 
         y += 10;
+
+        // Wallet Info in PDF
+        if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
+            const currentWalletBalance = loyaltyTransactions
+                .filter(t => t.clientId === activeFolioData.clientId)
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            doc.setFont('helvetica', 'bold');
+            doc.text('*** MONEDERO ELECTRONICO ***', centerX, y, { align: 'center' });
+            y += 4;
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Saldo Monedero: ${formatCurrency(currentWalletBalance)}`, centerX, y, { align: 'center' });
+            y += 6;
+        }
+
         doc.setFontSize(7);
-        doc.text('¡GRACIAS POR SU COMPRA!', centerX, y, { align: 'center' });
+        doc.text((settings.ticketFooterMessage || '¡GRACIAS POR SU PREFERENCIA!').toUpperCase(), centerX, y, { align: 'center', maxWidth: 70 });
 
         doc.save(`Ticket_Folio_${activeFolioData.folio}.pdf`);
     };
@@ -675,7 +758,8 @@ export default function Sales() {
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Cantidad</label>
                                 <input
                                     type="number"
-                                    min="1"
+                                    min="0.01"
+                                    step="0.01"
                                     value={quantity}
                                     onChange={(e) => setQuantity(Number(e.target.value))}
                                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-primary-500"
@@ -776,6 +860,7 @@ export default function Sales() {
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="number"
+                                                        step="0.01"
                                                         value={item.quantity}
                                                         onChange={(e) => handleUpdateCartQuantity(item.id, Number(e.target.value))}
                                                         className={`w-16 px-1 py-0.5 text-xs border rounded outline-none focus:border-primary-500 font-bold ${item.quantity < 0 ? 'text-red-600 border-red-200 bg-red-50' : 'text-slate-700'}`}

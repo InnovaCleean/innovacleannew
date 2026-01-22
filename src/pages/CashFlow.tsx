@@ -138,32 +138,56 @@ export default function CashFlow() {
             if (m.type === 'deposit') cashIn += m.amount;
         });
 
-        // Deduct Expenses and Withdrawals from Cash (assuming expenses are paid in cash usually?)
-        // Or we can list them separate.
-        // User said: "money that MUST exist in box... and when expense paid in cash it shows".
-        // Use logic: Box Balance = Cash Sales + Deposits - Cash Expenses - Withdrawals return
+        // Calculate Outflows (Expenses & Withdrawals) per method
+        // Assuming Expenses have description tags like [Pago: Transferencia] or we need a proper field.
+        // The current Expenses implementation only has 'Cash' (default) or 'Transfer/Card' if entered via UI.
+        // Let's rely on string parsing or the 'paymentMethod' field if we added it?
+        // Wait, I saw "paymentMethod" property in `newExpense` state in `Expenses.tsx`, BUT does `Expense` type have it?
+        // Checking `types.ts` is not possible easily, but `useStore` mapping didn't show it.
+        // In `Expenses.tsx`, I saw: `if (newExpense.paymentMethod !== 'cash') finalDesc += ...`
+        // So the info IS IN THE DESCRIPTION. "[Pago: Transferencia]", "[Pago: Tarjeta]".
+        // We will parse this.
 
-        // Expenses (Check for payment method in description)
-        // If description contains [Pago: Transferencia] or [Pago: Tarjeta], ignore for CASH BOX calculation
-        const cashExpenses = filteredExpenses.filter(e => {
+        let cardOut = 0;
+        let transferOut = 0;
+        let walletOut = 0; // Usually 0 unless manual adjustment
+        let cashExpenses = 0;
+
+        filteredExpenses.forEach(e => {
             const desc = e.description.toLowerCase();
-            if (desc.includes('[pago: transferencia]')) return false;
-            if (desc.includes('[pago: tarjeta]')) return false;
-            return true;
+            if (desc.includes('[pago: tarjeta]')) {
+                cardOut += e.amount;
+            } else if (desc.includes('[pago: transferencia]')) {
+                transferOut += e.amount;
+            } else {
+                // Default to Cash
+                cashExpenses += e.amount;
+            }
         });
 
-        const totalExpenses = cashExpenses.reduce((sum, e) => sum + e.amount, 0);
-        const totalWithdrawals = filteredMovements.filter(m => m.type === 'withdrawal').reduce((sum, m) => sum + m.amount, 0);
+        // Add Manual Withdrawals to corresponding category?
+        // Providing 'netCash' mainly cares about Cash.
+        // If a manual withdrawal is "Transfer", it should be tagged?
+        // For now manual movements are just "Cash Box" movements (Ingreso/Retiro de Caja).
+        const totalCashWithdrawals = filteredMovements.filter(m => m.type === 'withdrawal').reduce((sum, m) => sum + m.amount, 0);
 
-        const netCash = cashIn - totalExpenses - totalWithdrawals;
+        // Wallet Out: Only if we have "Refunds" via Wallet?
+        // Current system doesn't support "Refund to Wallet" explicitly in Sales return.
+        // But if we had manual movements for wallet...
+        // For now, Wallet Out is 0.
+
+        const netCash = cashIn - cashExpenses - totalCashWithdrawals;
 
         return {
             cashIn,
             cardIn,
             transferIn,
             walletIn,
-            totalExpenses,
-            totalWithdrawals,
+            cardOut,
+            transferOut,
+            walletOut,
+            totalExpenses: cashExpenses, // Only Cash Expenses affect "Efectivo en Caja"
+            totalWithdrawals: totalCashWithdrawals,
             netCash,
             history: [
                 ...relevantSales.map(s => ({ entryType: 'sale', ...s })),
@@ -255,28 +279,80 @@ export default function CashFlow() {
                             <h3 className={`text-4xl font-black text-${moneyColor}-600 mb-2`}>{formatCurrency(report.netCash)}</h3>
                             <div className="text-xs text-slate-400 font-medium space-y-1">
                                 <div className="flex justify-between"><span>Ventas Efectivo:</span> <span>+ {formatCurrency(report.cashIn)}</span></div>
-                                <div className="flex justify-between text-red-400"><span>Gastos:</span> <span>- {formatCurrency(report.totalExpenses)}</span></div>
+                                <div className="flex justify-between text-red-400"><span>Gastos (Efectivo):</span> <span>- {formatCurrency(report.totalExpenses)}</span></div>
                                 <div className="flex justify-between text-orange-400"><span>Retiros:</span> <span>- {formatCurrency(report.totalWithdrawals)}</span></div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Cards / Transfer */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                        <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-4">Otros Métodos (Banco)</p>
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                                <span className="text-sm font-medium text-slate-600">Tarjetas</span>
-                                <span className="font-bold text-slate-800">{formatCurrency(report.cardIn)}</span>
+                    {/* Cards / Transfer / Wallet Detailed Grid */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 md:col-span-2">
+                        <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-4">Desglose Bancario y Digital</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                            {/* Cards */}
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                <div className="flex items-center gap-2 mb-2 text-slate-700 font-bold text-sm">
+                                    <span>💳 Tarjetas</span>
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Ingreso:</span>
+                                        <span className="font-bold text-emerald-600">+ {formatCurrency(report.cardIn)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Egreso:</span>
+                                        <span className={`font-bold ${report.cardOut > 0 ? 'text-red-500' : 'text-slate-300'}`}>- {formatCurrency(report.cardOut)}</span>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-1 mt-1 flex justify-between font-bold text-slate-800">
+                                        <span>Neto:</span>
+                                        <span>{formatCurrency(report.cardIn - report.cardOut)}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                                <span className="text-sm font-medium text-slate-600">Transferencias</span>
-                                <span className="font-bold text-slate-800">{formatCurrency(report.transferIn)}</span>
+
+                            {/* Transfers */}
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                <div className="flex items-center gap-2 mb-2 text-slate-700 font-bold text-sm">
+                                    <span>🏦 Transferencia</span>
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Ingreso:</span>
+                                        <span className="font-bold text-emerald-600">+ {formatCurrency(report.transferIn)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Egreso:</span>
+                                        <span className={`font-bold ${report.transferOut > 0 ? 'text-red-500' : 'text-slate-300'}`}>- {formatCurrency(report.transferOut)}</span>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-1 mt-1 flex justify-between font-bold text-slate-800">
+                                        <span>Neto:</span>
+                                        <span>{formatCurrency(report.transferIn - report.transferOut)}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                                <span className="text-sm font-medium text-slate-600">Monedero</span>
-                                <span className="font-bold text-slate-800">{formatCurrency(report.walletIn)}</span>
+
+                            {/* Wallet */}
+                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                                <div className="flex items-center gap-2 mb-2 text-slate-700 font-bold text-sm">
+                                    <span>🟣 Monedero</span>
+                                </div>
+                                <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Venta (Puntos):</span>
+                                        <span className="font-bold text-emerald-600">+ {formatCurrency(report.walletIn)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">Devolución:</span>
+                                        <span className={`font-bold ${report.walletOut > 0 ? 'text-red-500' : 'text-slate-300'}`}>- {formatCurrency(report.walletOut)}</span>
+                                    </div>
+                                    <div className="border-t border-slate-200 pt-1 mt-1 flex justify-between font-bold text-slate-800">
+                                        <span>Neto:</span>
+                                        <span>{formatCurrency(report.walletIn - report.walletOut)}</span>
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
 

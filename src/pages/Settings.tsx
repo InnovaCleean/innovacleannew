@@ -141,6 +141,16 @@ export default function Settings() {
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
                             />
                         </div>
+                        <div className="space-y-1 md:col-span-2 lg:col-span-3">
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mensaje en Pie de Ticket</label>
+                            <input
+                                type="text"
+                                value={settings.ticketFooterMessage || ''}
+                                onChange={(e) => useStore.getState().updateSettings({ ticketFooterMessage: e.target.value })}
+                                placeholder="Ej. ¡Gracias por su preferencia!"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                            />
+                        </div>
                     </div>
 
                     <hr className="my-8 border-slate-100" />

@@ -26,16 +26,28 @@ export const formatDate = (dateString: string) => {
     // User says current data is "Jan 18 19:38" (which was likely intended to be Jan 19 02:00?).
     // Let's rely on standard parsing.
 
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-MX', {
-        timeZone: 'America/Mexico_City',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    }).format(date);
+    if (!dateString) return 'Fecha inválida';
+    try {
+        let date = new Date(dateString);
+        // Fix for YYYY-MM-DD on mobile (Safari/older browsers)
+        if (dateString.length === 10 && dateString.includes('-')) {
+            date = new Date(`${dateString}T12:00:00`);
+        }
+
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+
+        return new Intl.DateTimeFormat('es-MX', {
+            timeZone: 'America/Mexico_City',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        }).format(date);
+    } catch (e) {
+        return 'Fecha inválida';
+    }
 };
 
 export const getCDMXDate = (): string => {

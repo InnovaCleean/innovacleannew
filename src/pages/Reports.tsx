@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { formatCurrency, getCDMXDate, getCDMXFirstDayOfMonth, parseCDMXDate, getCDMXNow } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Download } from 'lucide-react';
+import { Calendar, Download, DollarSign } from 'lucide-react';
 import { exportSalesToExcel } from '../lib/exportUtils';
 
 export default function Reports() {
@@ -79,6 +79,20 @@ export default function Reports() {
     }, 0);
 
     const totalProfit = totalSales - totalCost;
+
+    // Wallet Stats
+    const walletSalesTotal = filteredSales.reduce((acc, s) => {
+        let amt = 0;
+        if (s.paymentMethod === 'wallet') {
+            amt = s.amount;
+        } else if (s.paymentMethod === 'multiple' && s.paymentDetails && s.paymentDetails.wallet) {
+            amt = s.paymentDetails.wallet;
+        }
+        return acc + amt;
+    }, 0);
+
+    const walletSalesPercentage = totalSales > 0 ? (walletSalesTotal / totalSales) * 100 : 0;
+    const operationalProfit = (totalSales - walletSalesTotal) - totalCost;
 
     // Seller Breakdown
     const sellerStats = useMemo(() => {
@@ -228,18 +242,40 @@ export default function Reports() {
                 </div>
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                         <p className="text-sm text-slate-500 font-medium font-sans">Ventas Totales</p>
                         <h3 className="text-2xl font-bold text-slate-900 mt-1 uppercase">{formatCurrency(totalSales)}</h3>
+                        <p className="text-xs text-slate-400 mt-1">100% Facturación</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm text-slate-500 font-medium font-sans">Costo Total</p>
+                        <p className="text-sm text-slate-500 font-medium font-sans">Ventas Monedero</p>
+                        <h3 className="text-2xl font-bold text-purple-600 mt-1 uppercase">{formatCurrency(walletSalesTotal)}</h3>
+                        <p className="text-xs text-purple-400 mt-1">{walletSalesPercentage.toFixed(1)}% del Total</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p className="text-sm text-slate-500 font-medium font-sans">Costo de Ventas</p>
                         <h3 className="text-2xl font-bold text-red-600 mt-1 uppercase">{formatCurrency(totalCost)}</h3>
+                        <p className="text-xs text-slate-400 mt-1">Inversión en Producto</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-2 opacity-10">
+                            <DollarSign className="w-12 h-12 text-emerald-600" />
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium font-sans flex items-center gap-1">
+                            Utilidad Operativa (Cash)
+                            <span title="Utilidad excluyendo pagos con monedero (Flujo Real)" className="cursor-help text-slate-400 text-[10px] border border-slate-300 rounded px-1">?</span>
+                        </p>
+                        <h3 className={`text-2xl font-bold ${operationalProfit < 0 ? 'text-red-500' : 'text-emerald-500'} mt-1 uppercase`}>{formatCurrency(operationalProfit)}</h3>
+                        <p className="text-xs text-slate-400 mt-1">Ganancia real en dinero</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm text-slate-500 font-medium font-sans">Utilidad Neta</p>
-                        <h3 className={`text-2xl font-bold ${totalProfit < 0 ? 'text-red-600' : 'text-emerald-600'} mt-1 uppercase`}>{formatCurrency(totalProfit)}</h3>
+                        <p className="text-sm text-slate-500 font-medium font-sans">Utilidad Neta (Contable)</p>
+                        <h3 className={`text-2xl font-bold ${totalProfit < 0 ? 'text-red-600' : 'text-emerald-700'} mt-1 uppercase`}>{formatCurrency(totalProfit)}</h3>
+                        <p className="text-xs text-slate-400 mt-1">Incluye ventas con monedero</p>
                     </div>
                 </div>
 
@@ -346,6 +382,6 @@ export default function Reports() {
                     </div>
                 </div>
             </div>
-        </Layout>
+        </Layout >
     );
 }
