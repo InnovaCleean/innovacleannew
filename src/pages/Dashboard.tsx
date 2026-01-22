@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { formatCurrency, getCDMXDate, getCDMXNow, parseCDMXDate } from '../lib/utils';
-import { TrendingUp, DollarSign, Package } from 'lucide-react';
+import { TrendingUp, DollarSign, Package, ArrowDownCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
@@ -10,13 +10,15 @@ export default function Dashboard() {
     const products = useStore((state) => state.products);
     const users = useStore((state) => state.users);
 
+    const expenses = useStore((state) => state.expenses);
+
     // Filters
     const [selectedSeller, setSelectedSeller] = useState('all');
     const [selectedPeriod, setSelectedPeriod] = useState('week'); // 'day', 'week', 'month', 'year'
     const [selectedDate, setSelectedDate] = useState(getCDMXDate());
 
     // Filter Logic
-    const filteredSales = useMemo(() => {
+    const { filteredSales, filteredExpenses } = useMemo(() => {
         const now = getCDMXNow();
         // Correct timezone offset issue by treating the string as local
         const specificDayStart = parseCDMXDate(selectedDate);
@@ -36,7 +38,7 @@ export default function Dashboard() {
         const startOfYear = new Date(now.getFullYear(), 0, 1);
         startOfYear.setHours(0, 0, 0, 0);
 
-        return sales.filter(s => {
+        const fs = sales.filter(s => {
             // Seller Filter
             if (selectedSeller !== 'all' && s.sellerId !== selectedSeller) return false;
             if (s.correctionNote?.startsWith('CANCELADO')) return false;
@@ -53,16 +55,41 @@ export default function Dashboard() {
 
             return true;
         });
-    }, [sales, selectedSeller, selectedPeriod, selectedDate]);
+
+        // Filter Expenses (Similar date logic, ignore seller for now as expenses are global usually, or filter if needed)
+        const fe = expenses.filter(e => {
+            const date = parseCDMXDate(e.date);
+            if (selectedPeriod === 'day') {
+                return date >= specificDayStart && date <= specificDayEnd;
+            }
+            if (selectedPeriod === 'week') return date >= startOfWeek;
+            if (selectedPeriod === 'month') return date >= startOfMonth;
+            if (selectedPeriod === 'year') return date >= startOfYear;
+            return true;
+        });
+
+        return { filteredSales: fs, filteredExpenses: fe };
+    }, [sales, expenses, selectedSeller, selectedPeriod, selectedDate]);
 
     // Metrics Calculation
     const totalSales = filteredSales.reduce((acc, sale) => acc + sale.amount, 0);
 
-    const totalProfit = filteredSales.reduce((acc, sale) => {
+    const grossProfit = filteredSales.reduce((acc, sale) => {
         const product = products.find(p => p.sku === sale.sku);
         const cost = product ? product.cost : 0;
         return acc + (sale.amount - (cost * sale.quantity));
     }, 0);
+
+    const totalExpenses = filteredExpenses.reduce((acc, e) => acc + e.amount, 0);
+    const netProfit = grossProfit - totalExpenses;
+
+    // Wallet Stats
+    const walletSales = filteredSales.filter(s => s.paymentMethod === 'wallet' || s.paymentDetails?.wallet).reduce((acc, s) => {
+        if (s.paymentMethod === 'wallet') return acc + s.amount;
+        if (s.paymentDetails?.wallet) return acc + s.paymentDetails.wallet;
+        return acc;
+    }, 0);
+    const walletPercentage = totalSales > 0 ? (walletSales / totalSales) * 100 : 0;
 
     const inventoryValue = products.reduce((acc, p) => acc + (p.stockCurrent * p.cost), 0);
 
@@ -203,40 +230,81 @@ export default function Dashboard() {
                 </div>
 
                 {/* Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Ventas */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-emerald-100 text-emerald-600 rounded-lg">
                                 <DollarSign className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500 font-medium">Ventas ({selectedPeriod === 'day' ? 'Hoy' : selectedPeriod})</p>
-                                <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(totalSales)}</h3>
+                                <p className="text-sm text-slate-500 font-medium">Ventas</p>
+                                <h3 className="text-xl font-bold text-slate-900">{formatCurrency(totalSales)}</h3>
                             </div>
                         </div>
                     </div>
 
+                    {/* Utilidad Bruta */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                         <div className="flex items-center gap-4">
                             <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
                                 <TrendingUp className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500 font-medium">Utilidad Estimada</p>
-                                <h3 className={`text-2xl font-bold ${totalProfit < 0 ? 'text-red-600' : 'text-slate-900'}`}>{formatCurrency(totalProfit)}</h3>
+                                <p className="text-sm text-slate-500 font-medium">Utilidad Bruta</p>
+                                <h3 className="text-xl font-bold text-slate-900">{formatCurrency(grossProfit)}</h3>
                             </div>
                         </div>
                     </div>
 
+                    {/* Gastos Operativos */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-100 text-purple-600 rounded-lg">
-                                <Package className="w-6 h-6" />
+                            <div className="p-3 bg-red-100 text-red-600 rounded-lg">
+                                <ArrowDownCircle className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500 font-medium">Valor de Inventario</p>
-                                <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(inventoryValue)}</h3>
+                                <p className="text-sm text-slate-500 font-medium">Gastos Ops.</p>
+                                <h3 className="text-xl font-bold text-red-600">{formatCurrency(totalExpenses)}</h3>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Utilidad Neta Real */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${netProfit >= 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}`}>
+                                <DollarSign className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-slate-500 font-medium">Utilidad Neta</p>
+                                <h3 className={`text-xl font-bold ${netProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{formatCurrency(netProfit)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Wallet Usage Stats */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <p className="text-slate-500 font-bold text-xs uppercase mb-2">Impacto Monedero</p>
+                        <div className="flex items-end gap-2">
+                            <h3 className="text-2xl font-black text-purple-600">{walletPercentage.toFixed(1)}%</h3>
+                            <span className="text-sm text-slate-400 mb-1">de ventas totales</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
+                            <div className="bg-purple-500 h-full rounded-full" style={{ width: `${Math.min(walletPercentage, 100)}%` }}></div>
+                        </div>
+                    </div>
+
+                    {/* Inventory Value (Moved down) */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 col-span-3 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm text-slate-500 font-medium">Valor Total Inventario (Costo)</p>
+                            <h3 className="text-2xl font-bold text-slate-900">{formatCurrency(inventoryValue)}</h3>
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-full">
+                            <Package className="w-8 h-8 text-slate-400" />
                         </div>
                     </div>
                 </div>
