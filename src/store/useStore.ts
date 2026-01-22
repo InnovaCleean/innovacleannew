@@ -105,17 +105,7 @@ export const useStore = create<AppState>()(
             if (!import.meta.env.VITE_SUPABASE_URL) return;
 
             // Parallel Fetch
-            const [
-                { data: products },
-                { data: sales },
-                { data: clients },
-                { data: users },
-                { data: expenses },
-                { data: purchases },
-                { data: loyalty },
-                { data: settingsData }, // Keep settingsData fetch
-                { data: rolesData }
-            ] = await Promise.all([
+            const responses = await Promise.all([
                 supabase.from('products').select('*'),
                 supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(500),
                 supabase.from('clients').select('*'),
@@ -123,9 +113,22 @@ export const useStore = create<AppState>()(
                 supabase.from('expenses').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('purchases').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('loyalty_transactions').select('*').order('created_at', { ascending: false }),
-                supabase.from('settings').select('*').limit(1), // Changed single() to limit(1) to avoid errors if duplicates exist
+                supabase.from('settings').select('*').limit(1),
                 supabase.from('roles').select('*')
             ]);
+
+            const [productsResult, salesResult, clientsResult, usersResult, expensesResult, purchasesResult, loyaltyResult, settingsResult, rolesResult] = responses;
+
+            const products = productsResult.data;
+            const sales = salesResult.data;
+            const clients = clientsResult.data;
+            const users = usersResult.data;
+            const expenses = expensesResult.data;
+            const purchases = purchasesResult.data;
+            const loyalty = loyaltyResult.data;
+            const settingsData = settingsResult.data;
+            const settingsError = settingsResult.error;
+            const rolesData = rolesResult.data;
 
             let mappedRoles: Role[] = [];
             if (rolesData) {
@@ -289,28 +292,14 @@ export const useStore = create<AppState>()(
                         ...settingsRow
                     }
                 });
-                localStorage.setItem('app-settings', JSON.stringify({
-                    themeId: settingsRow.theme_id || 'blue',
-                    companyName: settingsRow.company_name || 'Innova Clean',
-                    logo: settingsRow.logo_url,
-                    city: settingsRow.city,
-                    state: settingsRow.state,
-                    country: settingsRow.country,
-                    phone: settingsRow.phone,
-                    email: settingsRow.email,
-                    rfc: settingsRow.rfc,
-                    address: settingsRow.address,
-                    zipCode: settingsRow.zip_code,
-                    colonia: settingsRow.colonia,
-                    masterPin: settingsRow.master_pin,
-                    priceThresholds: typeof settingsRow.price_thresholds === 'string'
-                        ? JSON.parse(settingsRow.price_thresholds)
-                        : settingsRow.price_thresholds || { medium: 5, wholesale: 10 },
-                    loyaltyPercentage: Number(settingsRow.loyalty_percentage) || 0,
-                    ticketFooterMessage: settingsRow.ticket_footer_message || '¡Gracias por su preferencia!',
-                    ...settingsRow
-                }));
+                // Sync to LocalStorage
+                localStorage.setItem('app-settings', JSON.stringify(settingsRow));
+            } else if (settingsError) {
+                console.error("Error loading settings, keeping defaults or local state:", settingsError);
+                // Do NOT overwrite with defaults if it's just a fetch error.
             } else {
+                // Only if NO error and NO data (empty table), we insert defaults
+                console.log("No settings found, initializing defaults...");
                 set({
                     settings: {
                         themeId: 'blue',

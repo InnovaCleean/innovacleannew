@@ -519,40 +519,48 @@ export default function Sales() {
     const handleGeneratePDFTicket = () => {
         if (!activeFolioData) return;
 
-        // 1. Calculate Estimated Height
-        let estimatedHeight = 100; // Base: Header (40) + Info (30) + Totals (10) + Footer (20)
+        // 1. Calculate Estimated Height - TIGHTER CALCULATION
+        let estimatedHeight = 45; // Reduced Base
+
+        // Header extra lines
+        if (settings.address) estimatedHeight += 4;
+        if (settings.city || settings.state) estimatedHeight += 4;
+        if (settings.phone) estimatedHeight += 4;
+        // Client Name wrap estimation
+        if (activeFolioData.clientName) {
+            estimatedHeight += 4;
+            if (activeFolioData.clientName.length > 25) estimatedHeight += 4;
+        }
 
         // Items Estimation
         activeFolioData.items.forEach(item => {
             const p = products.find(prod => prod.sku === item.sku);
             const name = (p?.name || item.sku);
-            // Approx 30 chars per line in 40mm width with font size 7
             const lines = Math.ceil(name.length / 25);
-            estimatedHeight += (lines * 3) + 2;
+            estimatedHeight += (lines * 3) + 1;
         });
 
         // Payment Section Estimation
-        // Header (4) + Lines (4 each)
-        estimatedHeight += 4;
         const isMultiple = activeFolioData.items[0]?.paymentMethod === 'multiple';
         if (isMultiple && activeFolioData.items[0]?.paymentDetails) {
+            estimatedHeight += 4; // Header
             estimatedHeight += Object.keys(activeFolioData.items[0].paymentDetails).length * 4;
         } else {
-            estimatedHeight += 4;
+            estimatedHeight += 6; // Single line
         }
 
         // Wallet Section Estimation
         if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
-            estimatedHeight += 30;
+            estimatedHeight += 20;
         }
 
         // Cancelled Watermark Extra
         if (activeFolioData.isCancelled) {
-            estimatedHeight += 10;
+            estimatedHeight += 8;
         }
 
         // Buffer
-        estimatedHeight += 10;
+        estimatedHeight += 5;
 
         const doc = new jsPDF({
             orientation: 'portrait',
@@ -560,7 +568,7 @@ export default function Sales() {
             format: [80, estimatedHeight]
         });
 
-        const startY = 10;
+        const startY = 4; // Minimal top margin
         let y = startY;
         const centerX = 40;
 
@@ -646,7 +654,7 @@ export default function Sales() {
 
             // Adjust y based on description height
             const lines = splitName.length;
-            y += (lines * 3) + 2;
+            y += (lines * 3) + 1;
         });
 
         y += 2;
@@ -659,11 +667,9 @@ export default function Sales() {
         doc.text(`TOTAL: ${formatCurrency(activeFolioData.amount)}`, 75, y, { align: 'right' });
         y += 6;
 
-        // Payment Method - Consolidated List Logic
+        // Payment Method Logic
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.text('MÉTODO DE PAGO:', 5, y);
-        y += 4;
 
         const method = activeFolioData.items[0]?.paymentMethod || activeFolioData.paymentMethod || 'cash';
         const methodMap: Record<string, string> = {
@@ -676,13 +682,15 @@ export default function Sales() {
         };
 
         if (method === 'multiple' && activeFolioData.items[0]?.paymentDetails) {
+            doc.text('MÉTODO DE PAGO:', 5, y);
+            y += 4;
             Object.entries(activeFolioData.items[0].paymentDetails).forEach(([m, amt]) => {
                 doc.text(`- ${methodMap[m] || m}: ${formatCurrency(amt as number)}`, 5, y);
                 y += 4;
             });
         } else {
-            // Single payment method
-            doc.text(`- ${methodMap[method] || method}: ${formatCurrency(activeFolioData.amount)}`, 5, y);
+            // Single Line format for non-mixed payments, NO amount shown
+            doc.text(`MÉTODO DE PAGO: ${methodMap[method] || method}`, 5, y);
             y += 4;
         }
 
@@ -691,11 +699,9 @@ export default function Sales() {
         // Wallet Info in PDF
         if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
             const client = clients.find(c => c.id === activeFolioData.clientId);
-            // Calculate points earned
             const percent = settings.loyaltyPercentage || 0;
             const pointsEarned = (activeFolioData.amount * percent) / 100;
 
-            // Calculate balance
             const currentWalletBalance = loyaltyTransactions
                 .filter(t => t.clientId === activeFolioData.clientId)
                 .reduce((acc, t) => acc + t.amount, 0);
