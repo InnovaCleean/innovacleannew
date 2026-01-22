@@ -316,14 +316,31 @@ export const useStore = create<AppState>()(
             const { data } = await supabase.from('users').select('*').eq('username', user.username).eq('password', user.password).single();
             if (data) {
                 const NOW = getCDMXISOString();
-                const userWithActivity = { ...data as User, lastActive: NOW, lastAction: 'Inicio de Sesión' };
+                const roles = get().roles;
+                let userPermissions: Permission[] = [];
+
+                if (data.role_id) {
+                    const role = roles.find(r => r.id === data.role_id);
+                    if (role) userPermissions = role.permissions;
+                } else if (data.role) {
+                    const role = roles.find(r => r.name === data.role);
+                    if (role) userPermissions = role.permissions;
+                }
+
+                const userWithActivity = {
+                    ...data as User,
+                    lastActive: NOW,
+                    lastAction: 'Inicio de Sesión',
+                    permissions: userPermissions
+                };
+
                 // Persist user
                 localStorage.setItem('app-user', JSON.stringify(userWithActivity));
 
                 // Update user activity on login
                 set((state) => {
                     const updatedUsers = state.users.map(u =>
-                        u.id === data.id ? { ...u, lastActive: NOW, lastAction: 'Inicio de Sesión' } : u
+                        u.id === data.id ? { ...u, lastActive: NOW, lastAction: 'Inicio de Sesión', permissions: userPermissions } : u
                     );
                     return {
                         user: userWithActivity,
