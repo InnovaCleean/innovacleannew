@@ -153,6 +153,7 @@ export default function Expenses() {
                 description: finalDesc,
                 date: finalDateStr
             } as Expense);
+            alert('Gasto actualizado correctamente');
         } else {
             await addExpense({
                 ...newExpense,
@@ -161,6 +162,7 @@ export default function Expenses() {
                 userName: user.name || 'Usuario',
                 date: finalDateStr
             } as Expense);
+            alert('Gasto registrado exitosamente');
         }
 
         setIsModalOpen(false);

@@ -97,6 +97,7 @@ export default function Inventory() {
                 alert('Producto creado correctamente');
             } else {
                 updateProduct(editingProduct.sku, editingProduct);
+                alert('Producto actualizado correctamente');
             }
             setEditingProduct(null);
             setIsCreating(false);

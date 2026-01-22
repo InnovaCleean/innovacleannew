@@ -64,7 +64,7 @@ export function Layout({ children }: LayoutProps) {
         { name: 'Compras', href: '/purchases', icon: CreditCard, permission: 'products:manage' },
         { name: 'Gastos', href: '/expenses', icon: DollarSign, permission: 'expenses:manage' },
         { name: 'Monedero', href: '/loyalty', icon: Gift, permission: 'clients:read' }, // Assuming loyalty access follows client access for now
-        { name: 'Flujo de Caja', href: '/cash-flow', icon: DollarSign, permission: 'cashflow:view' },
+        { name: 'Flujo de Caja', href: '/cash-flow', icon: DollarSign, permission: 'cashflow:read' },
         { name: 'Clientes', href: '/clients', icon: Users, permission: 'clients:read' },
         { name: 'Usuarios', href: '/users', icon: Users, permission: 'users:manage' },
         { name: 'Roles', href: '/roles', icon: Users, permission: 'users:manage' },

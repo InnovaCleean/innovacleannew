@@ -55,134 +55,12 @@ export default function Sales() {
     const handleNewClientSubmit = (data: Omit<Client, 'id'>) => {
         const newId = crypto.randomUUID();
         addClient({ ...data, id: newId });
+        alert('Cliente registrado exitosamente');
         setSelectedClient(newId);
         setIsClientModalOpen(false);
     };
 
-    const filteredProducts = useMemo(() => {
-        if (!searchTerm) return [];
-        return products.filter(p =>
-            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-        ).slice(0, 5);
-    }, [searchTerm, products]);
-
-    useEffect(() => {
-        if (selectedProduct) {
-            const absQty = Math.abs(quantity);
-            const mid = settings.priceThresholds?.medium || 6;
-            const whole = settings.priceThresholds?.wholesale || 12;
-
-            if (absQty >= whole) setCurrentPriceType('wholesale');
-            else if (absQty >= mid) setCurrentPriceType('medium');
-            else setCurrentPriceType('retail');
-        } else {
-            setCurrentPriceType('retail'); // Reset if no product selected
-        }
-    }, [quantity, selectedProduct, settings.priceThresholds]);
-
-    const currentPrice = useMemo(() => {
-        if (!selectedProduct) return 0;
-        if (currentPriceType === 'wholesale') return selectedProduct.priceWholesale;
-        if (currentPriceType === 'medium') return selectedProduct.priceMedium;
-        return selectedProduct.priceRetail;
-    }, [selectedProduct, currentPriceType]);
-
-    const total = currentPrice * quantity;
-    const cartTotal = cart.reduce((acc, item) => acc + item.amount, 0);
-
-    const handleAddToCart = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedProduct) return;
-
-        // Check if item already in cart (same SKU and same correction status)
-        const existingIdx = cart.findIndex(item => item.sku === selectedProduct.sku && item.isCorrection === correctionMode);
-
-        const finalQuantity = correctionMode ? -Math.abs(quantity) : Math.abs(quantity);
-        const finalAmount = currentPrice * finalQuantity;
-
-        const saleData: Sale = {
-            id: crypto.randomUUID(),
-            folio: '', // Store adds this
-            date: getCDMXISOString(),
-            sku: selectedProduct.sku,
-            productName: selectedProduct.name, // Add product name
-            unit: selectedProduct.unit || 'Litro',
-            quantity: finalQuantity,
-            priceType: currentPriceType as any,
-            priceUnit: currentPrice,
-            amount: finalAmount,
-            sellerId: user?.id || 'unknown',
-            sellerName: user?.name || 'Sistema',
-            clientId: selectedClient,
-            clientName: clients.find(c => c.id === selectedClient)?.name || 'General',
-            isCorrection: correctionMode,
-            correctionNote: correctionMode ? correctionNote : undefined
-        };
-
-        if (existingIdx >= 0) {
-            const newCart = [...cart];
-            newCart[existingIdx].quantity += finalQuantity;
-            newCart[existingIdx].amount += finalAmount;
-            setCart(newCart);
-        } else {
-            setCart(prev => [...prev, saleData]);
-        }
-
-        setSelectedProductSku(null);
-        setSearchTerm('');
-        setQuantity(1);
-    };
-
-    const handleRemoveFromCart = (id: string) => {
-        setCart(cart.filter(item => item.id !== id));
-    };
-
-    const handleUpdateCartQuantity = (id: string, newQty: number) => {
-        setCart(prev => prev.map(item => {
-            if (item.id === id) {
-                const product = products.find(p => p.sku === item.sku);
-                if (product) {
-                    const absQty = Math.abs(newQty);
-                    const mid = settings.priceThresholds?.medium || 6;
-                    const whole = settings.priceThresholds?.wholesale || 12;
-
-                    let priceType: 'retail' | 'medium' | 'wholesale' = 'retail';
-                    if (absQty >= whole) priceType = 'wholesale';
-                    else if (absQty >= mid) priceType = 'medium';
-
-                    const priceUnit = priceType === 'wholesale' ? product.priceWholesale :
-                        priceType === 'medium' ? product.priceMedium :
-                            product.priceRetail;
-
-                    const amount = priceUnit * newQty;
-                    return { ...item, quantity: newQty, priceType, priceUnit, amount, unit: product.unit || 'Litro' };
-                }
-                return { ...item, quantity: newQty, amount: item.priceUnit * newQty };
-            }
-            return item;
-        }));
-    };
-
-    const loyaltyTransactions = useStore((state) => state.loyaltyTransactions);
-
-    const walletBalance = useMemo(() => {
-        if (!selectedClient || selectedClient === 'general') return 0;
-        return loyaltyTransactions
-            .filter(t => t.clientId === selectedClient)
-            .reduce((acc, t) => acc + t.amount, 0); // Amount is + for earn, - for redeem
-    }, [selectedClient, loyaltyTransactions]);
-
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [paymentSplits, setPaymentSplits] = useState<Record<string, number>>({});
-
-    const handleSplitChange = (method: string, amount: number) => {
-        if (amount < 0) amount = 0;
-        if (method === 'wallet' && amount > walletBalance) {
-            amount = walletBalance;
-        }
-        setPaymentSplits(prev => ({ ...prev, [method]: amount }));
-    };
+    // ...
 
     const handleConfirmSale = () => {
         if (cart.length === 0) return;
@@ -234,6 +112,7 @@ export default function Sales() {
         }));
 
         addSalesBatch(finalizedCart);
+        alert('Venta registrada con éxito');
         setCart([]);
         setCorrectionMode(false);
         setCorrectionNote('');
@@ -270,6 +149,7 @@ export default function Sales() {
         }));
 
         addSalesBatch(finalizedCart);
+        alert('Venta registrada con éxito');
         setIsPaymentModalOpen(false);
         setCart([]);
         setCorrectionMode(false);
