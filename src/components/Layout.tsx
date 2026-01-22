@@ -49,22 +49,33 @@ export function Layout({ children }: LayoutProps) {
         return () => clearInterval(interval);
     }, [user?.id, location.pathname, updateUserActivity, fetchUsers]);
 
+    const hasPermission = (requiredPermission: string) => {
+        if (!user) return false;
+        if (user.role === 'admin') return true; // Fallback superset
+        if (user.permissions?.includes('*')) return true;
+        return user.permissions?.includes(requiredPermission as any);
+    };
+
     const links = [
-        { name: 'Ventas', href: '/sales', icon: ShoppingCart, roles: ['admin', 'seller'] },
-        { name: 'Historial', href: '/history', icon: HistoryIcon, roles: ['admin'] },
-        { name: 'Inventario', href: '/inventory', icon: Package, roles: ['admin', 'seller'] },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['admin'] },
-        { name: 'Compras', href: '/purchases', icon: CreditCard, roles: ['admin'] },
-        { name: 'Gastos', href: '/expenses', icon: DollarSign, roles: ['admin', 'seller'] },
-        { name: 'Monedero', href: '/loyalty', icon: Gift, roles: ['admin', 'seller'] },
-        { name: 'Flujo de Caja', href: '/cash-flow', icon: DollarSign, roles: ['admin'] },
-        { name: 'Usuarios', href: '/users', icon: Users, roles: ['admin'] },
-        { name: 'Clientes', href: '/clients', icon: Users, roles: ['admin'] },
-        { name: 'Reportes', href: '/reports', icon: BarChart3, roles: ['admin'] },
-        { name: 'Configuración', href: '/settings', icon: Settings, roles: ['admin'] },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, permission: 'reports:view' },
+        { name: 'Ventas', href: '/sales', icon: ShoppingCart, permission: 'sales:create' },
+        { name: 'Historial', href: '/history', icon: HistoryIcon, permission: 'sales:read' },
+        { name: 'Inventario', href: '/inventory', icon: Package, permission: 'products:read' },
+        { name: 'Compras', href: '/purchases', icon: CreditCard, permission: 'products:manage' },
+        { name: 'Gastos', href: '/expenses', icon: DollarSign, permission: 'expenses:manage' },
+        { name: 'Monedero', href: '/loyalty', icon: Gift, permission: 'clients:read' }, // Assuming loyalty access follows client access for now
+        { name: 'Flujo de Caja', href: '/cash-flow', icon: DollarSign, permission: 'cashflow:view' },
+        { name: 'Clientes', href: '/clients', icon: Users, permission: 'clients:read' },
+        { name: 'Usuarios', href: '/users', icon: Users, permission: 'users:manage' },
+        { name: 'Roles', href: '/roles', icon: Users, permission: 'users:manage' },
+        { name: 'Reportes', href: '/reports', icon: BarChart3, permission: 'reports:view' },
+        { name: 'Configuración', href: '/settings', icon: Settings, permission: 'settings:manage' },
     ];
 
-    const filteredLinks = links.filter(link => link.roles.includes(user?.role || ''));
+    const filteredLinks = links.filter(link => {
+        if (!link.permission) return true; // Public/Common
+        return hasPermission(link.permission);
+    });
 
     const handleLogout = () => {
         logout();

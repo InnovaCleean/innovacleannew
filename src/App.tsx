@@ -6,6 +6,7 @@ import History from './pages/History';
 import Inventory from './pages/Inventory';
 import Purchases from './pages/Purchases';
 import Users from './pages/Users';
+import Roles from './pages/Roles';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Clients from './pages/Clients';
@@ -55,73 +56,79 @@ function App() {
                 <Route path="/login" element={<Login />} />
 
                 <Route path="/dashboard" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="reports:view">
                         <Dashboard />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/purchases" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="products:manage">
                         <Purchases />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/users" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="users:manage">
                         <Users />
                     </ProtectedRoute>
                 } />
 
+                <Route path="/roles" element={
+                    <ProtectedRoute requiredPermission="users:manage">
+                        <Roles />
+                    </ProtectedRoute>
+                } />
+
                 <Route path="/reports" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="reports:view">
                         <Reports />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/clients" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="clients:read">
                         <Clients />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/settings" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="settings:manage">
                         <Settings />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/sales" element={
-                    <ProtectedRoute allowedRoles={['admin', 'seller']}>
+                    <ProtectedRoute requiredPermission="sales:create">
                         <Sales />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/history" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="sales:read">
                         <History />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/inventory" element={
-                    <ProtectedRoute allowedRoles={['admin', 'seller']}>
+                    <ProtectedRoute requiredPermission="products:read">
                         <Inventory />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/expenses" element={
-                    <ProtectedRoute allowedRoles={['admin', 'seller']}>
+                    <ProtectedRoute requiredPermission="expenses:manage">
                         <Expenses />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/loyalty" element={
-                    <ProtectedRoute allowedRoles={['admin', 'seller']}>
+                    <ProtectedRoute requiredPermission="clients:read">
                         <Loyalty />
                     </ProtectedRoute>
                 } />
 
                 <Route path="/cash-flow" element={
-                    <ProtectedRoute allowedRoles={['admin']}>
+                    <ProtectedRoute requiredPermission="cashflow:view">
                         <CashFlow />
                     </ProtectedRoute>
                 } />

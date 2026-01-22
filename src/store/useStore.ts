@@ -2,7 +2,7 @@ import { create } from 'zustand';
 // import { persist } from 'zustand/middleware'; // Persist removed for DB source of truth
 import { supabase } from '../lib/supabaseClient';
 
-import { Product, Sale, Purchase, User, Client, Settings, Expense, LoyaltyTransaction } from '../types';
+import { Product, Sale, Purchase, User, Client, Settings, Expense, LoyaltyTransaction, Role, Permission } from '../types';
 import { getCDMXISOString } from '../lib/utils';
 
 
@@ -70,6 +70,12 @@ interface AppState {
     loyaltyTransactions: LoyaltyTransaction[];
     addLoyaltyTransaction: (transaction: LoyaltyTransaction) => void;
     addManualLoyaltyTransaction: (clientId: string, amount: number, description: string, type: 'deposit' | 'withdrawal') => Promise<void>;
+
+    // Roles & Permissions
+    roles: Role[];
+    addRole: (role: Role) => Promise<void>;
+    updateRole: (id: string, updates: Partial<Role>) => Promise<void>;
+    deleteRole: (id: string) => Promise<void>;
 }
 
 export const useStore = create<AppState>()(
@@ -84,6 +90,7 @@ export const useStore = create<AppState>()(
         clients: [], // Loaded from DB
         expenses: [], // Loaded from DB
         loyaltyTransactions: [],
+        roles: [], // Loaded from DB
         settings: JSON.parse(localStorage.getItem('app-settings') || 'null') || {
             themeId: 'blue',
             companyName: 'Innova Clean',
@@ -106,7 +113,8 @@ export const useStore = create<AppState>()(
                 { data: expenses },
                 { data: purchases },
                 { data: loyalty },
-                { data: settingsData } // Keep settingsData fetch
+                { data: settingsData }, // Keep settingsData fetch
+                { data: rolesData }
             ] = await Promise.all([
                 supabase.from('products').select('*'),
                 supabase.from('sales').select('*').order('created_at', { ascending: false }).limit(500),
@@ -115,16 +123,45 @@ export const useStore = create<AppState>()(
                 supabase.from('expenses').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('purchases').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('loyalty_transactions').select('*').order('created_at', { ascending: false }),
-                supabase.from('settings').select('*').single() // Keep settingsData fetch
+                supabase.from('settings').select('*').single(), // Keep settingsData fetch
+                supabase.from('roles').select('*')
             ]);
 
-            if (users) {
-                const mappedUsers: User[] = users.map((u: any) => ({
-                    ...u,
-                    lastActive: u.last_active,
-                    lastAction: u.last_action,
-                    startDate: u.start_date
+            let mappedRoles: Role[] = [];
+            if (rolesData) {
+                mappedRoles = rolesData.map((r: any) => ({
+                    id: r.id,
+                    name: r.name,
+                    label: r.label,
+                    permissions: r.permissions
                 }));
+                set({ roles: mappedRoles });
+            }
+
+            if (users) {
+                const mappedUsers: User[] = users.map((u: any) => {
+                    // Map Role/Permissions
+                    let userPermissions: Permission[] = [];
+                    // 1. Try to find by role_id
+                    if (u.role_id) {
+                        const role = mappedRoles.find(r => r.id === u.role_id);
+                        if (role) userPermissions = role.permissions;
+                    }
+                    // 2. Fallback to legacy string role match
+                    else if (u.role) { // 'admin' or 'seller'
+                        const role = mappedRoles.find(r => r.name === u.role);
+                        if (role) userPermissions = role.permissions;
+                    }
+
+                    return {
+                        ...u,
+                        startDate: u.start_date,
+                        lastActive: u.last_active,
+                        lastAction: u.last_action,
+                        roleId: u.role_id,
+                        permissions: userPermissions
+                    };
+                });
                 set({ users: mappedUsers as any[] });
             }
             if (products) {
@@ -628,7 +665,8 @@ export const useStore = create<AppState>()(
                 const mappedUsers: User[] = data.map((u: any) => ({
                     ...u,
                     lastActive: u.last_active,
-                    lastAction: u.last_action
+                    lastAction: u.last_action,
+                    startDate: u.start_date
                 }));
                 set({ users: mappedUsers });
             }
@@ -777,6 +815,41 @@ export const useStore = create<AppState>()(
         addLoyaltyTransaction: async (t) => {
             await supabase.from('loyalty_transactions').insert([t]);
             get().fetchInitialData();
+        },
+
+        // Roles CRUD
+        addRole: async (role) => {
+            const { data } = await supabase.from('roles').insert([{
+                name: role.name,
+                label: role.label,
+                permissions: role.permissions
+            }]).select().single();
+            if (data) {
+                const newRole: Role = {
+                    id: data.id,
+                    name: data.name,
+                    label: data.label,
+                    permissions: data.permissions
+                };
+                set((state) => ({ roles: [...state.roles, newRole] }));
+            }
+        },
+        updateRole: async (id, updates) => {
+            const dbUpdates: any = {};
+            if (updates.name) dbUpdates.name = updates.name;
+            if (updates.label) dbUpdates.label = updates.label;
+            if (updates.permissions) dbUpdates.permissions = updates.permissions; // JSONB handling
+
+            await supabase.from('roles').update(dbUpdates).eq('id', id);
+            set((state) => ({
+                roles: state.roles.map(r => r.id === id ? { ...r, ...updates } : r)
+            }));
+        },
+        deleteRole: async (id) => {
+            await supabase.from('roles').delete().eq('id', id);
+            set((state) => ({
+                roles: state.roles.filter(r => r.id !== id)
+            }));
         },
         addManualLoyaltyTransaction: async (clientId, amount, description, type) => {
             const transaction = {

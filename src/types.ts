@@ -1,10 +1,30 @@
-export type UserRole = 'admin' | 'seller';
+export type UserRole = 'admin' | 'seller' | 'custom';
+
+export type Permission =
+    | '*'
+    | 'sales:read' | 'sales:create' | 'sales:cancel'
+    | 'products:read' | 'products:manage'
+    | 'clients:read' | 'clients:manage'
+    | 'users:manage'
+    | 'reports:view'
+    | 'settings:manage'
+    | 'expenses:manage'
+    | 'cashflow:view';
+
+export interface Role {
+    id: string;
+    name: string;
+    label: string;
+    permissions: Permission[];
+}
 
 export interface User {
     id: string;
     username: string;
     name: string;
-    role: UserRole;
+    role: UserRole; // Legacy/Display
+    roleId?: string; // FK to roles table
+    permissions?: Permission[]; // Hydrated permissions for easy access
     password?: string;
     email?: string;
     phone?: string;

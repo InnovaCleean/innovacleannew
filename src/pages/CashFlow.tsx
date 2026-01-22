@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
 import { ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency, parseCDMXDate, formatDate } from '../lib/utils';
+import billeteAxolote from '../assets/img/billete_50_axolote.png';
 
 type MovementType = 'deposit' | 'withdrawal';
 
@@ -273,7 +274,7 @@ export default function CashFlow() {
                     <div className={`bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow`}>
                         {/* Background Axolotl (Faded) */}
                         <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none grayscale">
-                            <img src="/img/billete_50_axolote.png" alt="Watermark" className="w-32 h-auto object-contain transform rotate-12" />
+                            <img src={billeteAxolote} alt="Watermark" className="w-32 h-auto object-contain transform rotate-12" />
                         </div>
 
                         <div className="flex justify-between items-start mb-4">
@@ -283,7 +284,7 @@ export default function CashFlow() {
                             </div>
                             {/* Primary Icon */}
                             <div className="relative z-10">
-                                <img src="/img/billete_50_axolote.png" alt="Efectivo" className="w-16 h-auto object-contain drop-shadow-sm filter hover:brightness-110 transition-all" />
+                                <img src={billeteAxolote} alt="Efectivo" className="w-16 h-auto object-contain drop-shadow-sm filter hover:brightness-110 transition-all" />
                             </div>
                         </div>
 
