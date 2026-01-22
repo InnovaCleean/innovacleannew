@@ -119,14 +119,27 @@ export default function Expenses() {
             finalDesc += ` [Pago: ${methodLabel}]`;
         }
 
-        // Create full ISO string with current time for correct sorting logic (noon fix or current)
+        // Date Handling Logic:
+        // 1. If editing and date hasn't changed (YYYY-MM-DD match), keep original ISO.
+        // 2. If new/changed to today, use current time.
+        // 3. If changed to specific date, use noon to avoid timezone shifts.
+
         let finalDateStr = newExpense.date || '';
         const nowLocal = new Date();
         const todayLocalStr = nowLocal.toLocaleDateString('en-CA');
 
-        if (newExpense.date === todayLocalStr) {
+        // Check if we are editing and best effort check if date input value matches the original date part
+        const isEditingAndDateUnchanged = editingExpense &&
+            newExpense.date === new Date(editingExpense.date).toLocaleDateString('en-CA');
+
+        if (isEditingAndDateUnchanged && editingExpense) {
+            // Keep original exact timestamp
+            finalDateStr = editingExpense.date;
+        } else if (newExpense.date === todayLocalStr) {
+            // Use current ISO string
             finalDateStr = nowLocal.toISOString();
         } else {
+            // Force mid-day local to prevent rolling offset issues
             const midDay = new Date(`${newExpense.date}T12:00:00`);
             finalDateStr = midDay.toISOString();
         }

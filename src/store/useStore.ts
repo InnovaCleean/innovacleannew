@@ -122,7 +122,8 @@ export const useStore = create<AppState>()(
                 const mappedUsers: User[] = users.map((u: any) => ({
                     ...u,
                     lastActive: u.last_active,
-                    lastAction: u.last_action
+                    lastAction: u.last_action,
+                    startDate: u.start_date
                 }));
                 set({ users: mappedUsers as any[] });
             }
@@ -449,7 +450,8 @@ export const useStore = create<AppState>()(
                 name: user.name,
                 role: user.role,
                 email: user.email,
-                phone: user.phone
+                phone: user.phone,
+                start_date: user.startDate // Persist start date
             }]).select().single();
             if (data) set((state) => ({ users: [...state.users, { ...user, id: data.id }] }));
         },
@@ -461,6 +463,7 @@ export const useStore = create<AppState>()(
             if (updates.role) dbUpdates.role = updates.role;
             if (updates.email) dbUpdates.email = updates.email;
             if (updates.phone) dbUpdates.phone = updates.phone;
+            if (updates.startDate) dbUpdates.start_date = updates.startDate; // Persist start date update
             await supabase.from('users').update(dbUpdates).eq('id', id);
             set((state) => {
                 const updatedUsers = state.users.map(u => u.id === id ? { ...u, ...updates } : u);

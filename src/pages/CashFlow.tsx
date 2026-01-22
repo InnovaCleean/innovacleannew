@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
-import { Banknote, ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Calendar, DollarSign, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatCurrency, parseCDMXDate, formatDate } from '../lib/utils';
 
 type MovementType = 'deposit' | 'withdrawal';
@@ -271,15 +271,23 @@ export default function CashFlow() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Cash Box */}
                     <div className={`bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow`}>
-                        <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity bg-${moneyColor}-500 rounded-bl-3xl`}>
-                            <Banknote className={`w-12 h-12 text-${moneyColor}-600`} />
+                        {/* Background Axolotl (Faded) */}
+                        <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none grayscale">
+                            <img src="/img/billete_50_axolote.png" alt="Watermark" className="w-32 h-auto object-contain transform rotate-12" />
                         </div>
-                        <div className="absolute top-4 right-4 bg-emerald-100 p-3 rounded-full opacity-100 shadow-sm animate-pulse">
-                            <Banknote className="w-8 h-8 text-emerald-600" />
+
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="relative z-10">
+                                <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-1">Efectivo en Caja</p>
+                                <h3 className={`text-4xl font-black text-${moneyColor}-600`}>{formatCurrency(report.netCash)}</h3>
+                            </div>
+                            {/* Primary Icon */}
+                            <div className="relative z-10">
+                                <img src="/img/billete_50_axolote.png" alt="Efectivo" className="w-16 h-auto object-contain drop-shadow-sm filter hover:brightness-110 transition-all" />
+                            </div>
                         </div>
+
                         <div className="relative z-10">
-                            <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-1">Efectivo en Caja</p>
-                            <h3 className={`text-4xl font-black text-${moneyColor}-600 mb-2`}>{formatCurrency(report.netCash)}</h3>
                             <div className="text-xs text-slate-400 font-medium space-y-1">
                                 <div className="flex justify-between"><span>Ventas Efectivo:</span> <span>+ {formatCurrency(report.cashIn)}</span></div>
                                 <div className="flex justify-between text-red-400"><span>Gastos (Efectivo):</span> <span>- {formatCurrency(report.totalExpenses)}</span></div>
