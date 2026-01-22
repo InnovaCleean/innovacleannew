@@ -362,6 +362,12 @@ export default function Sales() {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
 
+        // Calculate Points Earned in THIS transaction
+        // (Assuming logic: 1 point per $10 or similar? Or percentage?)
+        // Store rules: loyaltyPercentage from settings
+        const percent = settings.loyaltyPercentage || 0;
+        const pointsEarned = (activeFolioData.amount * percent) / 100;
+
         // Prepare Wallet Info Lines
         const client = clients.find(c => c.id === activeFolioData.clientId);
         let walletInfoHtml = '';
@@ -387,7 +393,8 @@ export default function Sales() {
                     <div class="wallet-section">
                         <p class="wallet-title">*** MONEDERO ELECTRÓNICO ***</p>
                         <p>Estado: <strong>${client.walletStatus === 'pending' ? 'PENDIENTE' : 'INACTIVO'}</strong></p>
-                        <p>Saldo acumulado: <strong>${formatCurrency(currentWalletBalance)}</strong></p>
+                        <p>Puntos de esta compra: <strong>$${formatCurrency(pointsEarned).replace('$', '')}</strong></p>
+                        <p>Saldo acumulado total: <strong>${formatCurrency(currentWalletBalance)}</strong></p>
                         <p>¡Solicita tu activación para usarlo!</p>
                     </div>
                  `;
@@ -396,6 +403,7 @@ export default function Sales() {
                 walletInfoHtml = `
                     <div class="wallet-section">
                         <p class="wallet-title">*** MONEDERO ELECTRÓNICO ***</p>
+                        <p>Puntos Ganados: <strong>$${formatCurrency(pointsEarned).replace('$', '')}</strong></p>
                         <p>Saldo Actual: <strong>${formatCurrency(currentWalletBalance)}</strong></p>
                         <p>¡No olvides utilizarlo regularmente!</p>
                     </div>
@@ -405,10 +413,9 @@ export default function Sales() {
 
         const itemsHtml = activeFolioData.items.map(item => `
             <tr>
-                <td>${item.quantity}</td>
-                <td>${item.productName || item.sku}</td>
-                <td style="text-align: right">$${item.priceUnit}</td>
-                <td style="text-align: right">$${item.amount}</td>
+                <td style="width: 15%; text-align: left; vertical-align: top;">${item.quantity}</td>
+                <td style="width: 55%; text-align: left; vertical-align: top;">${item.productName || item.sku}</td>
+                <td style="width: 30%; text-align: right; vertical-align: top;">$${item.amount}</td>
             </tr>
         `).join('');
 
@@ -424,9 +431,15 @@ export default function Sales() {
                     /* Centering Helpers */
                     .center { text-align: center; }
                     
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-                    th, td { text-align: left; padding: 2px 0; }
-                    th { border-bottom: 1px dashed black; }
+                    /* Table Layout Fixed */
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed; }
+                    th { text-align: left; padding: 2px 0; border-bottom: 1px dashed black; font-size: 10px; }
+                    td { padding: 2px 0; font-size: 11px; }
+                    
+                    /* Specific column adjustments for header to match body */
+                    th.col-qty { width: 15%; text-align: left; }
+                    th.col-desc { width: 55%; text-align: left; }
+                    th.col-amt { width: 30%; text-align: right; } /* User asked for left for content, but standard is right for amounts, will align body right too for readability, or adhere strict left? User said: "cada una este su contenido alineado a la izquierda". Okay, let's try LEFT for amount too. */
                     
                     .total { text-align: right; font-weight: bold; font-size: 14px; margin-top: 5px; border-top: 1px dashed black; padding-top: 5px; }
                     
@@ -454,8 +467,22 @@ export default function Sales() {
                 <p style="text-align: center; margin: 5px 0;">----------------------------------------</p>
 
                 <table>
-                    <thead><tr><th>Cant</th><th>Prod</th><th>P.U</th><th>Total</th></tr></thead>
-                    <tbody>${itemsHtml}</tbody>
+                    <thead>
+                        <tr>
+                            <th class="col-qty">CANT</th>
+                            <th class="col-desc">DESCRIPCION</th>
+                            <th class="col-amt" style="text-align: left;">IMPORTE</th> 
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activeFolioData.items.map(item => `
+                            <tr>
+                                <td style="text-align: left;">${item.quantity}</td>
+                                <td style="text-align: left;">${item.productName || item.sku}</td>
+                                <td style="text-align: left;">$${item.amount}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
                 </table>
                 <div class="total">
                     TOTAL: ${formatCurrency(activeFolioData.amount)}
@@ -517,10 +544,26 @@ export default function Sales() {
             doc.text(`${settings.city || ''}, ${settings.state || ''}`, centerX, y, { align: 'center' });
             y += 4;
         }
+        if (settings.phone) {
+            doc.text(`Tel: ${settings.phone}`, centerX, y, { align: 'center' });
+            y += 4;
+        }
+
         y += 2;
         doc.text('------------------------------------------------', centerX, y, { align: 'center' });
         y += 4;
 
+        // Cancelled Watermark/Legend
+        if (activeFolioData.isCancelled) {
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(200, 0, 0); // Red
+            doc.text('*** CANCELADO ***', centerX, y, { align: 'center' });
+            doc.setTextColor(0, 0, 0); // Reset
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            y += 6;
+        }
 
         // Info
         doc.setFont('helvetica', 'bold');
@@ -538,20 +581,36 @@ export default function Sales() {
         doc.text('------------------------------------------------', centerX, y, { align: 'center' });
         y += 4;
 
-        // Items
+        // Items Headers
         doc.setFontSize(7);
-        doc.text('CANT  DESCRIPCION           IMPORTE', 5, y);
+        doc.setFont('helvetica', 'bold');
+        // Define X positions: Cant=5, Desc=18, Importe=60
+        doc.text('CANT', 5, y);
+        doc.text('DESCRIPCION', 18, y);
+        doc.text('IMPORTE', 60, y);
         y += 4;
+        doc.setFont('helvetica', 'normal');
 
         activeFolioData.items.forEach(item => {
             const p = products.find(prod => prod.sku === item.sku);
-            const name = (p?.name || item.sku).substring(0, 18);
-            const qty = item.quantity.toString().padEnd(4);
+            const name = (p?.name || item.sku); // Full name, will wrap
+            const qty = item.quantity.toString();
             const total = formatCurrency(item.amount);
 
-            doc.text(`${qty} ${name}`, 5, y);
-            doc.text(total, 75, y, { align: 'right' });
-            y += 4;
+            // Print Cant
+            doc.text(qty, 5, y);
+
+            // Print Importe first to ensure alignment, though order doesn't matter much
+            doc.text(total, 60, y);
+
+            // Print Description with wrapping
+            // available width for desc is approx 60-18=42mm
+            const splitName = doc.splitTextToSize(name, 40);
+            doc.text(splitName, 18, y);
+
+            // Adjust y based on description height
+            const lines = splitName.length;
+            y += (lines * 3) + 2;
         });
 
         y += 2;
@@ -567,7 +626,7 @@ export default function Sales() {
         // Payment Method
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        const method = activeFolioData.items[0]?.paymentMethod || 'cash';
+        const method = activeFolioData.items[0]?.paymentMethod || activeFolioData.paymentMethod || 'cash';
         const methodMap: Record<string, string> = {
             'cash': 'EFECTIVO',
             'card_credit': 'TARJETA CREDITO',
@@ -588,10 +647,16 @@ export default function Sales() {
             doc.text(`MÉTODO DE PAGO: ${methodMap[method] || method}`, 5, y);
         }
 
-        y += 10;
+        y += 8;
 
         // Wallet Info in PDF
         if (activeFolioData.clientId && activeFolioData.clientId !== 'general') {
+            const client = clients.find(c => c.id === activeFolioData.clientId);
+            // Calculate points earned
+            const percent = settings.loyaltyPercentage || 0;
+            const pointsEarned = (activeFolioData.amount * percent) / 100;
+
+            // Calculate balance
             const currentWalletBalance = loyaltyTransactions
                 .filter(t => t.clientId === activeFolioData.clientId)
                 .reduce((acc, t) => acc + t.amount, 0);
@@ -599,15 +664,29 @@ export default function Sales() {
             doc.setFont('helvetica', 'bold');
             doc.text('*** MONEDERO ELECTRONICO ***', centerX, y, { align: 'center' });
             y += 4;
+
             doc.setFont('helvetica', 'normal');
-            doc.text(`Saldo Monedero: ${formatCurrency(currentWalletBalance)}`, centerX, y, { align: 'center' });
+            doc.setFontSize(7);
+
+            if (!client?.walletStatus || client.walletStatus !== 'active') {
+                if (client?.walletStatus === 'pending') {
+                    doc.text('Estado: PENDIENTE', centerX, y, { align: 'center' }); y += 3;
+                } else {
+                    doc.text('Estado: INACTIVO', centerX, y, { align: 'center' }); y += 3;
+                }
+            } else {
+                doc.text(`Puntos Ganados: $${formatCurrency(pointsEarned).replace('$', '')}`, centerX, y, { align: 'center' });
+                y += 3;
+            }
+
+            doc.text(`Saldo Acumulado: ${formatCurrency(currentWalletBalance)}`, centerX, y, { align: 'center' });
             y += 6;
         }
 
         doc.setFontSize(7);
         doc.text((settings.ticketFooterMessage || '¡GRACIAS POR SU PREFERENCIA!').toUpperCase(), centerX, y, { align: 'center', maxWidth: 70 });
 
-        doc.save(`Ticket_Folio_${activeFolioData.folio}.pdf`);
+        doc.save(`Ticket_Folio_${activeFolioData.folio}${activeFolioData.isCancelled ? '_CANCELADO' : ''}.pdf`);
     };
 
     return (

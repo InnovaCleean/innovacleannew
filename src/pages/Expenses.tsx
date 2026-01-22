@@ -199,32 +199,35 @@ export default function Expenses() {
                     {/* Filters Bar */}
                     <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                         <div className="flex flex-col lg:flex-row gap-3 items-end">
-                            <div className="grid grid-cols-2 gap-3 flex-1 w-full lg:w-auto md:max-w-md">
-                                <div className="space-y-1">
+                            {/* Search First (Left) */}
+                            <div className="flex-1 w-full lg:w-auto">
+                                <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1 mb-1">
+                                    <Tag className="w-3 h-3" /> Buscar
+                                </label>
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    placeholder="Descripción..."
+                                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
+                                />
+                            </div>
+
+                            {/* Date Group (Right) */}
+                            <div className="flex gap-2 w-full lg:w-auto items-end">
+                                <div className="space-y-1 flex-1 lg:w-40">
                                     <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
                                         <Calendar className="w-3 h-3" /> Desde
                                     </label>
                                     <input
                                         type="date"
+                                        value={startDate}
                                         onChange={e => setStartDate(e.target.value)}
                                         className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
                                     />
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
-                                        <Tag className="w-3 h-3" /> Buscar
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        placeholder="Descripción..."
-                                        className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 gap-3 flex-1 w-full lg:w-auto md:max-w-xs">
-                                <div className="space-y-1">
+                                <div className="pb-2 text-slate-400 font-bold">-</div>
+                                <div className="space-y-1 flex-1 lg:w-40">
                                     <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
                                         <Calendar className="w-3 h-3" /> Hasta
                                     </label>
@@ -240,7 +243,7 @@ export default function Expenses() {
                     </div>
                 </div>
 
-                <div className="min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-slate-50">
+                <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-slate-50">
                     <table className="w-full text-left text-sm border-separate border-spacing-0">
                         <thead className="bg-primary-600 text-white font-medium sticky top-0 z-10 shadow-md">
                             <tr>
@@ -458,6 +461,6 @@ export default function Expenses() {
                     </div>
                 )}
             </div>
-        </Layout >
+        </Layout>
     );
 }
