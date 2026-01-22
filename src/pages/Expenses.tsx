@@ -17,6 +17,7 @@ export default function Expenses() {
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [startDate, setStartDate] = useState(getCDMXFirstDayOfMonth());
     const [endDate, setEndDate] = useState(getCDMXDate());
+    const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
     const [newExpense, setNewExpense] = useState<Partial<Expense> & { paymentMethod: string }>({
@@ -52,7 +53,9 @@ export default function Expenses() {
 
         let result = expenses.filter(e => {
             const date = parseCDMXDate(e.date);
-            return date >= startDay && date <= endDay;
+            const matchesDate = date >= startDay && date <= endDay;
+            const matchesSearch = searchTerm === '' || e.description.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesDate && matchesSearch;
         });
 
         if (sortConfig) {
@@ -69,7 +72,7 @@ export default function Expenses() {
             result.sort((a, b) => parseCDMXDate(b.date).getTime() - parseCDMXDate(a.date).getTime());
         }
         return result;
-    }, [expenses, startDate, endDate, sortConfig]);
+    }, [expenses, startDate, endDate, sortConfig, searchTerm]);
 
     const handleOpenModal = (expense?: Expense) => {
         if (expense) {
@@ -203,11 +206,24 @@ export default function Expenses() {
                                     </label>
                                     <input
                                         type="date"
-                                        value={startDate}
                                         onChange={e => setStartDate(e.target.value)}
                                         className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
                                     />
                                 </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
+                                        <Tag className="w-3 h-3" /> Buscar
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                        placeholder="Descripción..."
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 flex-1 w-full lg:w-auto md:max-w-xs">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
                                         <Calendar className="w-3 h-3" /> Hasta

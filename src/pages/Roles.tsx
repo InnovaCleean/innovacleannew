@@ -193,11 +193,63 @@ export default function Roles() {
                                             <Shield className="w-3 h-3" /> Acceso Total
                                         </span>
                                     ) : (
-                                        role.permissions.map(p => (
-                                            <span key={p} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs border border-slate-200">
-                                                {p}
-                                            </span>
-                                        ))
+                                        role.permissions.map(p => {
+                                            // Helper to find label
+                                            let label: string = p;
+                                            for (const g of PERMISSION_GROUPS) {
+                                                const found = g.permissions.find(perm => perm.id === p);
+                                                if (found) {
+                                                    // Transform "Crear Ventas" (Actions) + Group Label (Page) -> "[Ventas - Crear]"
+                                                    // Simplify for UI: Use a predefined mapping or construct it.
+                                                    // Constructing: "[Group - Action]"
+                                                    // E.g. Group "Ventas", Action "Crear Ventas" -> [Ventas - Crear Ventas]
+
+                                                    // Let's make it cleaner as requested: [Ventas - Crear]
+                                                    // We can strip common words or just use the Action label if it's descriptive enough, 
+                                                    // but user asked for [Page - Action].
+                                                    // Let's use the Group Label as "Page" and try to clean the Action label
+
+                                                    const page = g.label.split(' / ')[0]; // "Inventario / Productos" -> "Inventario"
+                                                    let action = found.label;
+
+                                                    // Manual cleanups for brevity
+                                                    action = action.replace('Crear ', '').replace('Ver ', '').replace('Gestionar ', '').replace(' (Super Admin)', '').replace(' (Crear/Editar/Eliminar)', '');
+                                                    if (action === 'Historial') action = 'Leer';
+                                                    if (action === 'Configuración General') action = 'Editar';
+                                                    if (action === 'Acceso Total') action = 'Total';
+
+                                                    // Re-map verbs if needed, or just use the cleaned noun?
+                                                    // User example: [Ventas - Leer]
+                                                    // My action for sales:read is "Ver Historial" -> "Historial" -> maybe "Leer"?
+                                                    // Let's just Map ID to exact string user wants for best results.
+
+                                                    const ID_TO_LABEL: Record<string, string> = {
+                                                        'sales:create': 'Crear',
+                                                        'sales:read': 'Leer',
+                                                        'sales:cancel': 'Cancelar',
+                                                        'products:read': 'Leer',
+                                                        'products:manage': 'Crear/Editar',
+                                                        'clients:read': 'Leer',
+                                                        'clients:manage': 'Crear/Editar',
+                                                        'users:manage': 'Gestionar',
+                                                        'reports:view': 'Leer',
+                                                        'cashflow:view': 'Leer',
+                                                        'expenses:manage': 'Gestionar',
+                                                        'settings:manage': 'Editar',
+                                                        '*': 'Total'
+                                                    };
+
+                                                    action = ID_TO_LABEL[p as string] || action;
+                                                    label = `[${page} - ${action}]`;
+                                                }
+                                            }
+
+                                            return (
+                                                <span key={p} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs border border-slate-200 font-mono">
+                                                    {label}
+                                                </span>
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
