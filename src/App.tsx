@@ -128,7 +128,7 @@ function App() {
                 } />
 
                 <Route path="/cash-flow" element={
-                    <ProtectedRoute requiredPermission="cashflow:view">
+                    <ProtectedRoute requiredPermission="cashflow:read">
                         <CashFlow />
                     </ProtectedRoute>
                 } />

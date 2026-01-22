@@ -9,7 +9,7 @@ export type Permission =
     | 'reports:view'
     | 'settings:manage'
     | 'expenses:manage'
-    | 'cashflow:view';
+    | 'cashflow:read';
 
 export interface Role {
     id: string;
