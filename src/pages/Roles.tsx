@@ -24,7 +24,8 @@ const PERMISSION_GROUPS = [
         label: 'Clientes',
         permissions: [
             { id: 'clients:read', label: 'Ver Clientes' },
-            { id: 'clients:manage', label: 'Gestionar Clientes' }
+            { id: 'clients:create', label: 'Crear Clientes' },
+            { id: 'clients:manage', label: 'Gestionar Clientes (Editar/Eliminar)' }
         ]
     },
     {
@@ -37,7 +38,7 @@ const PERMISSION_GROUPS = [
         label: 'Finanzas y Reportes',
         permissions: [
             { id: 'reports:view', label: 'Ver Reportes Avanzados' },
-            { id: 'cashflow:view', label: 'Ver Flujo de Caja' },
+            { id: 'cashflow:read', label: 'Ver Flujo de Caja' },
             { id: 'expenses:manage', label: 'Gestionar Gastos' }
         ]
     },
@@ -291,7 +292,6 @@ export default function Roles() {
                                                             </div>
                                                             <div className="text-sm">
                                                                 <span className="font-medium text-slate-700 block">{perm.label}</span>
-                                                                <span className="text-[10px] text-slate-400 font-mono">{perm.id}</span>
                                                             </div>
                                                         </label>
                                                     ))}

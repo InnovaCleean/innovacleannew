@@ -123,7 +123,7 @@ export const useStore = create<AppState>()(
                 supabase.from('expenses').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('purchases').select('*').order('date', { ascending: false }).limit(200),
                 supabase.from('loyalty_transactions').select('*').order('created_at', { ascending: false }),
-                supabase.from('settings').select('*').single(), // Keep settingsData fetch
+                supabase.from('settings').select('*').limit(1), // Changed single() to limit(1) to avoid errors if duplicates exist
                 supabase.from('roles').select('*')
             ]);
 
@@ -263,50 +263,52 @@ export const useStore = create<AppState>()(
                 set({ loyaltyTransactions: mappedLoyalty });
             }
 
-            if (settingsData) {
+            const settingsRow: any = Array.isArray(settingsData) ? settingsData[0] : settingsData;
+
+            if (settingsRow) {
                 set({
                     settings: {
-                        themeId: settingsData.theme_id || 'blue',
-                        companyName: settingsData.company_name || 'Innova Clean',
-                        logo: settingsData.logo_url,
-                        city: settingsData.city,
-                        state: settingsData.state,
-                        country: settingsData.country,
-                        phone: settingsData.phone,
-                        email: settingsData.email,
-                        rfc: settingsData.rfc,
-                        address: settingsData.address,
-                        zipCode: settingsData.zip_code,
-                        colonia: settingsData.colonia,
-                        masterPin: settingsData.master_pin,
-                        priceThresholds: typeof settingsData.price_thresholds === 'string'
-                            ? JSON.parse(settingsData.price_thresholds)
-                            : settingsData.price_thresholds || { medium: 5, wholesale: 10 },
-                        loyaltyPercentage: Number(settingsData.loyalty_percentage) || 0,
-                        ticketFooterMessage: settingsData.ticket_footer_message || '¡Gracias por su preferencia!',
-                        ...settingsData
+                        themeId: settingsRow.theme_id || 'blue',
+                        companyName: settingsRow.company_name || 'Innova Clean',
+                        logo: settingsRow.logo_url,
+                        city: settingsRow.city,
+                        state: settingsRow.state,
+                        country: settingsRow.country,
+                        phone: settingsRow.phone,
+                        email: settingsRow.email,
+                        rfc: settingsRow.rfc,
+                        address: settingsRow.address,
+                        zipCode: settingsRow.zip_code,
+                        colonia: settingsRow.colonia,
+                        masterPin: settingsRow.master_pin,
+                        priceThresholds: typeof settingsRow.price_thresholds === 'string'
+                            ? JSON.parse(settingsRow.price_thresholds)
+                            : settingsRow.price_thresholds || { medium: 5, wholesale: 10 },
+                        loyaltyPercentage: Number(settingsRow.loyalty_percentage) || 0,
+                        ticketFooterMessage: settingsRow.ticket_footer_message || '¡Gracias por su preferencia!',
+                        ...settingsRow
                     }
                 });
                 localStorage.setItem('app-settings', JSON.stringify({
-                    themeId: settingsData.theme_id || 'blue',
-                    companyName: settingsData.company_name || 'Innova Clean',
-                    logo: settingsData.logo_url,
-                    city: settingsData.city,
-                    state: settingsData.state,
-                    country: settingsData.country,
-                    phone: settingsData.phone,
-                    email: settingsData.email,
-                    rfc: settingsData.rfc,
-                    address: settingsData.address,
-                    zipCode: settingsData.zip_code,
-                    colonia: settingsData.colonia,
-                    masterPin: settingsData.master_pin,
-                    priceThresholds: typeof settingsData.price_thresholds === 'string'
-                        ? JSON.parse(settingsData.price_thresholds)
-                        : settingsData.price_thresholds || { medium: 5, wholesale: 10 },
-                    loyaltyPercentage: Number(settingsData.loyalty_percentage) || 0,
-                    ticketFooterMessage: settingsData.ticket_footer_message || '¡Gracias por su preferencia!',
-                    ...settingsData
+                    themeId: settingsRow.theme_id || 'blue',
+                    companyName: settingsRow.company_name || 'Innova Clean',
+                    logo: settingsRow.logo_url,
+                    city: settingsRow.city,
+                    state: settingsRow.state,
+                    country: settingsRow.country,
+                    phone: settingsRow.phone,
+                    email: settingsRow.email,
+                    rfc: settingsRow.rfc,
+                    address: settingsRow.address,
+                    zipCode: settingsRow.zip_code,
+                    colonia: settingsRow.colonia,
+                    masterPin: settingsRow.master_pin,
+                    priceThresholds: typeof settingsRow.price_thresholds === 'string'
+                        ? JSON.parse(settingsRow.price_thresholds)
+                        : settingsRow.price_thresholds || { medium: 5, wholesale: 10 },
+                    loyaltyPercentage: Number(settingsRow.loyalty_percentage) || 0,
+                    ticketFooterMessage: settingsRow.ticket_footer_message || '¡Gracias por su preferencia!',
+                    ...settingsRow
                 }));
             } else {
                 set({
