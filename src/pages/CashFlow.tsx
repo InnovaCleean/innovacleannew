@@ -270,9 +270,12 @@ export default function CashFlow() {
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Cash Box */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                    <div className={`bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow`}>
                         <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity bg-${moneyColor}-500 rounded-bl-3xl`}>
                             <Banknote className={`w-12 h-12 text-${moneyColor}-600`} />
+                        </div>
+                        <div className="absolute top-4 right-4 bg-emerald-100 p-3 rounded-full opacity-100 shadow-sm animate-pulse">
+                            <Banknote className="w-8 h-8 text-emerald-600" />
                         </div>
                         <div className="relative z-10">
                             <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-1">Efectivo en Caja</p>
@@ -381,20 +384,28 @@ export default function CashFlow() {
                         <Calendar className="w-5 h-5" /> Movimientos Detallados
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500">
+                        <table className="w-full text-left text-sm border-separate border-spacing-0">
+                            <thead className="bg-primary-600 text-white font-medium sticky top-0 z-10 shadow-md">
                                 <tr>
-                                    <th onClick={() => handleSort('date')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
-                                        Fecha <SortIcon columnKey="date" />
+                                    <th onClick={() => handleSort('date')} className="px-6 py-4 cursor-pointer group hover:bg-primary-700 transition-colors border-b border-primary-700">
+                                        <div className="flex items-center gap-2">
+                                            Fecha <SortIcon columnKey="date" />
+                                        </div>
                                     </th>
-                                    <th onClick={() => handleSort('concept')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
-                                        Concepto <SortIcon columnKey="concept" />
+                                    <th onClick={() => handleSort('concept')} className="px-6 py-4 cursor-pointer group hover:bg-primary-700 transition-colors border-b border-primary-700">
+                                        <div className="flex items-center gap-2">
+                                            Concepto <SortIcon columnKey="concept" />
+                                        </div>
                                     </th>
-                                    <th onClick={() => handleSort('type')} className="px-6 py-3 cursor-pointer hover:bg-slate-100 select-none">
-                                        Tipo <SortIcon columnKey="type" />
+                                    <th onClick={() => handleSort('type')} className="px-6 py-4 cursor-pointer group hover:bg-primary-700 transition-colors border-b border-primary-700">
+                                        <div className="flex items-center gap-2">
+                                            Tipo <SortIcon columnKey="type" />
+                                        </div>
                                     </th>
-                                    <th onClick={() => handleSort('amount')} className="px-6 py-3 text-right cursor-pointer hover:bg-slate-100 select-none">
-                                        Monto <SortIcon columnKey="amount" />
+                                    <th onClick={() => handleSort('amount')} className="px-6 py-4 text-right cursor-pointer group hover:bg-primary-700 transition-colors border-b border-primary-700">
+                                        <div className="flex items-center justify-end gap-2">
+                                            Monto <SortIcon columnKey="amount" />
+                                        </div>
                                     </th>
                                 </tr>
                             </thead>

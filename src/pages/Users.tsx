@@ -36,7 +36,9 @@ export default function Users() {
             email: '',
             phone: '',
             role: 'seller',
-            startDate: new Date().toISOString().split('T')[0]
+            // Do not reset date here to a default if we are about to edit, 
+            // but if we are creating new, handled by initial state or handleOpenModal 'else' block
+            startDate: new Date().toISOString()
         });
         setEditingUser(null);
     };
@@ -46,7 +48,10 @@ export default function Users() {
             setEditingUser(user);
             setFormData(user);
         } else {
+            // New User
             resetForm();
+            // Reset date effectively to today for new user
+            setFormData(prev => ({ ...prev, startDate: new Date().toISOString() }));
         }
         setIsModalOpen(true);
     };

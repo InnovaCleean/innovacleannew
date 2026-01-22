@@ -63,6 +63,7 @@ interface AppState {
     // Expenses
     expenses: Expense[];
     addExpense: (expense: Expense) => void;
+    updateExpense: (id: string, updates: Partial<Expense>) => Promise<void>;
     deleteExpense: (id: string) => void;
 
     // Loyalty
@@ -537,6 +538,21 @@ export const useStore = create<AppState>()(
                 set((state) => ({ expenses: [newExpense, ...state.expenses] }));
                 get().updateUserActivity(`Registró gasto: ${expense.description}`);
             }
+        },
+        updateExpense: async (id, updates) => {
+            const dbUpdates: any = {};
+            if (updates.description) dbUpdates.description = updates.description;
+            if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+            if (updates.type) dbUpdates.type = updates.type;
+            if (updates.category) dbUpdates.category = updates.category;
+            if (updates.date) dbUpdates.date = updates.date;
+
+            await supabase.from('expenses').update(dbUpdates).eq('id', id);
+
+            set((state) => ({
+                expenses: state.expenses.map(e => e.id === id ? { ...e, ...updates } : e)
+            }));
+            get().updateUserActivity(`Actualizó gasto: ${updates.description || 'ID ' + id}`);
         },
 
         deleteExpense: async (id) => {

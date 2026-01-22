@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Layout } from '../components/Layout';
-import { Plus, Trash2, X, DollarSign, Tag, User } from 'lucide-react';
-import { formatCurrency, formatDate } from '../lib/utils';
+import { formatCurrency, formatDate, getCDMXFirstDayOfMonth, getCDMXDate, parseCDMXDate } from '../lib/utils';
 import { Expense } from '../types';
+import { Plus, Trash2, X, DollarSign, Tag, User, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Edit2 } from 'lucide-react';
 
 export default function Expenses() {
     const expenses = useStore((state) => state.expenses);
     const addExpense = useStore((state) => state.addExpense);
+    const updateExpense = useStore((state) => state.updateExpense);
     const deleteExpense = useStore((state) => state.deleteExpense);
     const user = useStore((state) => state.user);
     // const settings = useStore((state) => state.settings); // Removed unused variable
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+    const [startDate, setStartDate] = useState(getCDMXFirstDayOfMonth());
+    const [endDate, setEndDate] = useState(getCDMXDate());
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
     const [newExpense, setNewExpense] = useState<Partial<Expense> & { paymentMethod: string }>({
         description: '',
         amount: 0,
@@ -25,6 +31,83 @@ export default function Expenses() {
     // Access check: Admin and Seller allowed (Seller: Capture only)
     if (!user) return null;
 
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (!sortConfig || sortConfig.key !== columnKey) return <ArrowUpDown className="w-3 h-3 text-slate-400 group-hover:text-primary-500 transition-colors" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-primary-600" /> : <ArrowDown className="w-3 h-3 text-primary-600" />;
+    };
+
+    const filteredExpenses = React.useMemo(() => {
+        const startDay = parseCDMXDate(startDate);
+        startDay.setHours(0, 0, 0, 0);
+        const endDay = parseCDMXDate(endDate);
+        endDay.setHours(23, 59, 59, 999);
+
+        let result = expenses.filter(e => {
+            const date = parseCDMXDate(e.date);
+            return date >= startDay && date <= endDay;
+        });
+
+        if (sortConfig) {
+            result.sort((a, b) => {
+                const aValue = (a as any)[sortConfig.key];
+                const bValue = (b as any)[sortConfig.key];
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        } else {
+            // Default sort: Date desc
+            result.sort((a, b) => parseCDMXDate(b.date).getTime() - parseCDMXDate(a.date).getTime());
+        }
+        return result;
+    }, [expenses, startDate, endDate, sortConfig]);
+
+    const handleOpenModal = (expense?: Expense) => {
+        if (expense) {
+            setEditingExpense(expense);
+            // Parse existing description to find payment method tag
+            let method = 'cash';
+            let desc = expense.description;
+            if (desc.includes('[Pago: Tarjeta]')) {
+                method = 'card_debit'; // Defaulting to debit, we can't know for sure unless we store it distinctly. Or 'card' generic.
+                desc = desc.replace(' [Pago: Tarjeta]', '');
+            } else if (desc.includes('[Pago: Transferencia]')) {
+                method = 'transfer';
+                desc = desc.replace(' [Pago: Transferencia]', '');
+            }
+
+            setNewExpense({
+                ...expense,
+                description: desc,
+                amount: expense.amount,
+                type: expense.type,
+                category: expense.category,
+                date: new Date(expense.date).toLocaleDateString('en-CA'),
+                paymentMethod: method
+            });
+        } else {
+            setEditingExpense(null);
+            setNewExpense({
+                description: '',
+                amount: 0,
+                type: 'variable',
+                category: 'General',
+                date: new Date().toLocaleDateString('en-CA'),
+                paymentMethod: 'cash'
+            });
+        }
+        setIsModalOpen(true);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newExpense.description || !newExpense.amount) return;
@@ -36,40 +119,36 @@ export default function Expenses() {
             finalDesc += ` [Pago: ${methodLabel}]`;
         }
 
-        // Create full ISO string with current time for correct sorting
-        const now = new Date();
-
-
-        // If today, use current time. If other day, use 12:00 or current time? 
-        // User wants "same format ... date and time".
-        // If they pick "Today", we want "Now". If they pick "Yesterday", we probably want "End of Yesterday" or "Yesterday 12:00"?
-        // Let's preserve the selected date component but add current time components if it's today, otherwise 12:00 pm.
-        // Date Handling Logic:
-        // 1. If date from input matches today's date (local YYYY-MM-DD), use CURRENT EXACT TIME (ISO).
-        // 2. If past/future, append T12:00:00 to avoid timezone shifts and ensure it's mid-day.
-        let finalDateStr = newExpense.date;
-        const nowLocal = new Date(); // Browser's local time (Source of truth for user)
-        const todayLocalStr = nowLocal.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        // Create full ISO string with current time for correct sorting logic (noon fix or current)
+        let finalDateStr = newExpense.date || '';
+        const nowLocal = new Date();
+        const todayLocalStr = nowLocal.toLocaleDateString('en-CA');
 
         if (newExpense.date === todayLocalStr) {
-            // Use current ISO string
             finalDateStr = nowLocal.toISOString();
         } else {
-            // Force mid-day local to prevent rolling offset issues, then convert to ISO UTC
-            // This ensures Postgres receives a standard ISO string
             const midDay = new Date(`${newExpense.date}T12:00:00`);
             finalDateStr = midDay.toISOString();
         }
 
-        await addExpense({
-            ...newExpense,
-            description: finalDesc,
-            userId: user.id || '00000000-0000-0000-0000-000000000000',
-            userName: user.name || 'Usuario',
-            date: finalDateStr
-        } as Expense);
+        if (editingExpense) {
+            updateExpense(editingExpense.id, {
+                ...newExpense,
+                description: finalDesc,
+                date: finalDateStr
+            } as Expense);
+        } else {
+            await addExpense({
+                ...newExpense,
+                description: finalDesc,
+                userId: user.id || '00000000-0000-0000-0000-000000000000',
+                userName: user.name || 'Usuario',
+                date: finalDateStr
+            } as Expense);
+        }
 
         setIsModalOpen(false);
+        setEditingExpense(null);
         setNewExpense({
             description: '',
             amount: 0,
@@ -89,77 +168,140 @@ export default function Expenses() {
     return (
         <Layout>
             <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-5rem)] flex flex-col">
-                <div className="flex-none pb-4 bg-slate-50">
+                <div className="flex-none pb-4 bg-slate-50 space-y-4">
                     <div className="flex justify-between items-center">
                         <h1 className="text-2xl font-bold text-slate-800">Gastos</h1>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => handleOpenModal()}
                             className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm font-bold"
                         >
                             <Plus className="w-4 h-4" />
                             REGISTRAR GASTO
                         </button>
                     </div>
+
+                    {/* Filters Bar */}
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="flex flex-col lg:flex-row gap-3 items-end">
+                            <div className="grid grid-cols-2 gap-3 flex-1 w-full lg:w-auto md:max-w-md">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
+                                        <Calendar className="w-3 h-3" /> Desde
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={e => setStartDate(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1 ml-1">
+                                        <Calendar className="w-3 h-3" /> Hasta
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={e => setEndDate(e.target.value)}
+                                        className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 bg-slate-50 font-bold"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 overflow-auto scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-slate-50">
                     <table className="w-full text-left text-sm border-separate border-spacing-0">
-                        <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0 z-10">
+                        <thead className="bg-primary-600 text-white font-medium sticky top-0 z-10 shadow-md">
                             <tr>
-                                <th className="px-6 py-3 border-b border-slate-200">Fecha</th>
-                                <th className="px-6 py-3 border-b border-slate-200">Descripción</th>
-                                <th className="px-6 py-3 border-b border-slate-200">Categoría</th>
-                                <th className="px-6 py-3 border-b border-slate-200">Tipo</th>
-                                <th className="px-6 py-3 border-b border-slate-200">Usuario</th>
-                                <th className="px-6 py-3 border-b border-slate-200 text-right">Monto</th>
-                                {(user.role === 'admin') && <th className="px-6 py-3 border-b border-slate-200 text-center">Acciones</th>}
+                                <th onClick={() => handleSort('date')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        Fecha <SortIcon columnKey="date" />
+                                    </div>
+                                </th>
+                                <th onClick={() => handleSort('description')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        Descripción <SortIcon columnKey="description" />
+                                    </div>
+                                </th>
+                                <th onClick={() => handleSort('category')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        Categoría <SortIcon columnKey="category" />
+                                    </div>
+                                </th>
+                                <th onClick={() => handleSort('type')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        Tipo <SortIcon columnKey="type" />
+                                    </div>
+                                </th>
+                                <th onClick={() => handleSort('userName')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        Usuario <SortIcon columnKey="userName" />
+                                    </div>
+                                </th>
+                                <th onClick={() => handleSort('amount')} className="px-6 py-4 border-b border-primary-700 cursor-pointer group hover:bg-primary-700 transition-colors text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        Monto <SortIcon columnKey="amount" />
+                                    </div>
+                                </th>
+                                {(user.role === 'admin') && <th className="px-6 py-4 border-b border-primary-700 text-center">Acciones</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {expenses.length === 0 ? (
+                            {filteredExpenses.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
-                                        No hay gastos registrados.
+                                        No hay gastos registrados en este periodo.
                                     </td>
                                 </tr>
                             ) : (
-                                expenses.map((expense) => (
+                                filteredExpenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-3 text-slate-500 font-mono text-xs">
+                                        <td className="px-6 py-4 text-slate-500 font-mono text-xs">
                                             {formatDate(expense.date)}
                                         </td>
-                                        <td className="px-6 py-3 font-medium text-slate-900">
+                                        <td className="px-6 py-4 font-medium text-slate-900">
                                             {expense.description}
                                         </td>
-                                        <td className="px-6 py-3">
+                                        <td className="px-6 py-4">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
                                                 <Tag className="w-3 h-3 mr-1" />
                                                 {expense.category}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3">
+                                        <td className="px-6 py-4">
                                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase ${expense.type === 'fijo' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>
                                                 {expense.type}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3 text-slate-500 text-xs">
+                                        <td className="px-6 py-4 text-slate-500 text-xs">
                                             <span className="flex items-center gap-1">
                                                 <User className="w-3 h-3" />
                                                 {expense.userName}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3 text-right font-bold text-slate-700">
+                                        <td className="px-6 py-4 text-right font-bold text-slate-700">
                                             {formatCurrency(expense.amount)}
                                         </td>
                                         {(user.role === 'admin') && (
-                                            <td className="px-6 py-3 text-center">
-                                                <button
-                                                    onClick={() => handleDelete(expense.id)}
-                                                    className="p-1 text-slate-400 hover:text-red-500 transition-colors rounded hover:bg-red-50"
-                                                    title="Eliminar Gasto"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenModal(expense)}
+                                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                        title="Editar Gasto"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(expense.id)}
+                                                        className="p-1 text-slate-400 hover:text-red-500 transition-colors rounded hover:bg-red-50"
+                                                        title="Eliminar Gasto"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         )}
                                     </tr>
@@ -176,7 +318,7 @@ export default function Expenses() {
                             <div className="bg-primary-600 p-4 flex justify-between items-center text-white">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                     <DollarSign className="w-5 h-5" />
-                                    Nuevo Gasto
+                                    {editingExpense ? 'Editar Gasto' : 'Nuevo Gasto'}
                                 </h3>
                                 <button onClick={() => setIsModalOpen(false)} className="hover:bg-primary-700 p-1 rounded-full transition-colors">
                                     <X className="w-5 h-5" />

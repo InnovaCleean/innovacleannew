@@ -27,7 +27,7 @@ export default function History() {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const updateSale = useStore((state) => state.updateSale);
     const deleteSale = useStore((state) => state.deleteSale);
-    const resetDataForDeployment = useStore((state) => state.resetDataForDeployment);
+
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -306,24 +306,6 @@ export default function History() {
                                 <FileText className="w-4 h-4" />
                                 PDF
                             </button>
-                            {/* Reset Button (Protected) */}
-                            <button
-                                onClick={() => {
-                                    const pwd = prompt('INGRESE CONTRASEÑA DE ADMINISTRADOR:');
-                                    if (pwd === 'Geld9eg5.@') {
-                                        if (confirm('ADVERTENCIA CRÍTICA: ¿ESTÁ SEGURO? Se eliminarán TODAS las ventas y clientes (excepto General).')) {
-                                            resetDataForDeployment();
-                                            alert('Base de datos limpiada para despliegue.');
-                                        }
-                                    } else {
-                                        alert('Acceso Denegado: Requiere autorización del desarrollador.');
-                                    }
-                                }}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-bold transition-all shadow-lg shadow-slate-800/20 text-xs"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                LIMPIAR BD
-                            </button>
                         </div>
                     </div>
 
@@ -351,7 +333,7 @@ export default function History() {
                             <p className="text-lg font-black text-slate-800">{formatCurrency(sortedGroupedSales.reduce((acc, g) => acc + (g.isCancelled ? 0 : g.cost), 0))}</p>
                         </div>
                         <div className="bg-white p-2.5 rounded-xl border border-slate-200">
-                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Utilidad</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Utilidad Bruta</p>
                             <p className={`text-lg font-black ${sortedGroupedSales.reduce((acc, g) => acc + (g.isCancelled ? 0 : g.amount - g.cost), 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                 {formatCurrency(sortedGroupedSales.reduce((acc, g) => acc + (g.isCancelled ? 0 : g.amount - g.cost), 0))}
                             </p>
